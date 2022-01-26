@@ -151,14 +151,14 @@ export default function Example() {
                   alt="Workflow"
                 />
               </div>
-              <div className="mt-20">
+              <div className="mt-5">
                 <div>
                   <a href="#" className="inline-flex space-x-4">
-                    <span className="rounded bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-500 tracking-wide uppercase">
+                    <span className="rounded bg-stone-50 px-2.5 py-1 text-xs font-semibold text-stone-500 tracking-wide uppercase">
                       What's new
                     </span>
-                    <span className="inline-flex items-center text-sm font-medium text-rose-500 space-x-1">
-                      <span>Just shipped version 0.1.0</span>
+                    <span className="inline-flex items-center text-sm font-medium text-stone-500 space-x-1">
+                      <span>Check out my latests sets on MixCloud</span>
                       <ChevronRightIcon
                         className="h-5 w-5"
                         aria-hidden="true"
@@ -168,71 +168,13 @@ export default function Example() {
                 </div>
                 <div className="mt-6 sm:max-w-xl">
                   <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight sm:text-5xl">
-                    Issue management for growing teams
+                    Open Format 
+                    <br/>
+                    Mobile DJ + MC 
                   </h1>
                   <p className="mt-6 text-xl text-gray-500">
-                    Anim aute id magna aliqua ad ad non deserunt sunt. Qui irure
-                    qui lorem cupidatat commodo.
+                    Providing custom mixed sound tracks at venues through out the beautiful Central Coast of California. Over 5 years and 100+ events of experience delivering quality audio experience to crowds upwords of 500 guests of all ages and backgrounds.
                   </p>
-                </div>
-                <form
-                  action="#"
-                  className="mt-12 sm:max-w-lg sm:w-full sm:flex"
-                >
-                  <div className="min-w-0 flex-1">
-                    <label htmlFor="hero-email" className="sr-only">
-                      Email address
-                    </label>
-                    <input
-                      id="hero-email"
-                      type="email"
-                      className="block w-full border border-gray-300 rounded-md px-5 py-3 text-base text-gray-900 placeholder-gray-500 shadow-sm focus:border-rose-500 focus:ring-rose-500"
-                      placeholder="Enter your email"
-                    />
-                  </div>
-                  <div className="mt-4 sm:mt-0 sm:ml-3">
-                    <button
-                      type="submit"
-                      className="block w-full rounded-md border border-transparent px-5 py-3 bg-rose-500 text-base font-medium text-white shadow hover:bg-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 sm:px-10"
-                    >
-                      Notify me
-                    </button>
-                  </div>
-                </form>
-                <div className="mt-6">
-                  <div className="inline-flex items-center divide-x divide-gray-300">
-                    <div className="flex-shrink-0 flex pr-5">
-                      <StarIcon
-                        className="h-5 w-5 text-yellow-400"
-                        aria-hidden="true"
-                      />
-                      <StarIcon
-                        className="h-5 w-5 text-yellow-400"
-                        aria-hidden="true"
-                      />
-                      <StarIcon
-                        className="h-5 w-5 text-yellow-400"
-                        aria-hidden="true"
-                      />
-                      <StarIcon
-                        className="h-5 w-5 text-yellow-400"
-                        aria-hidden="true"
-                      />
-                      <StarIcon
-                        className="h-5 w-5 text-yellow-400"
-                        aria-hidden="true"
-                      />
-                    </div>
-                    <div className="min-w-0 flex-1 pl-5 py-1 text-sm text-gray-500 sm:py-3">
-                      <span className="font-medium text-gray-900">
-                        Rated 5 stars
-                      </span>{' '}
-                      by over{' '}
-                      <span className="font-medium text-rose-500">
-                        500 beta users
-                      </span>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
@@ -337,14 +279,9 @@ export default function Example() {
                     alt=""
                   />
                   <div className="absolute inset-0 bg-rose-500 mix-blend-multiply" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-rose-600 via-rose-600 opacity-90" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-rose-600 via-rose-600 opacity-90 hover:opacity-0" />
                   <div className="relative px-8">
                     <div>
-                      <img
-                        className="h-12"
-                        src="https://tailwindui.com/img/logos/workcation.svg?color=white"
-                        alt="Workcation"
-                      />
                     </div>
                     <blockquote className="mt-8">
                       <div className="relative text-lg font-medium text-white md:flex-grow">
@@ -357,15 +294,13 @@ export default function Example() {
                           <path d="M9.352 4C4.456 7.456 1 13.12 1 19.36c0 5.088 3.072 8.064 6.624 8.064 3.36 0 5.856-2.688 5.856-5.856 0-3.168-2.208-5.472-5.088-5.472-.576 0-1.344.096-1.536.192.48-3.264 3.552-7.104 6.624-9.024L9.352 4zm16.512 0c-4.8 3.456-8.256 9.12-8.256 15.36 0 5.088 3.072 8.064 6.624 8.064 3.264 0 5.856-2.688 5.856-5.856 0-3.168-2.304-5.472-5.184-5.472-.576 0-1.248.096-1.44.192.48-3.264 3.456-7.104 6.528-9.024L25.864 4z" />
                         </svg>
                         <p className="relative">
-                          Tincidunt integer commodo, cursus etiam aliquam neque,
-                          et. Consectetur pretium in volutpat, diam. Montes,
-                          magna cursus nulla feugiat dignissim id lobortis amet.
+                          Lets create the perfect event that your guests will talk about for years to come! I will leverage your music preferences and favorite jams and add in 20/20 Crowd Reading Vision to birth the ultimate vibe.
                         </p>
                       </div>
 
                       <footer className="mt-4">
                         <p className="text-base font-semibold text-rose-200">
-                          LaDell Erby, AKA at DJ YBRE
+                          LaDell Erby, AKA DJ YBRE
                         </p>
                       </footer>
                     </blockquote>
@@ -376,16 +311,16 @@ export default function Example() {
 
             <div className="relative mx-auto max-w-md px-4 sm:max-w-3xl sm:px-6 lg:px-0">
               {/* Content area */}
-              <div className="pt-12 px-100px sm:pt-16 lg:pt-20">
+              <div className="pt-12 px-100 sm:pt-10 lg:pt-2">
                 <Flex
                   w={['100%', '100%', '100%', '100%']}
                   direction={['column', 'column', 'row', 'column']}
                   bg={bg}
                   rounded="none"
                   align="center"
-                  minH="70vh"
+                  p={50}
                 >
-                  <PadBoard buttons={LinkPadList} columns={2} buttonSize='150px' />
+                  <PadBoard buttons={LinkPadList} columns={2} buttonSize='175px' />
                 </Flex>
               </div>
 
@@ -394,24 +329,24 @@ export default function Example() {
         </div>
 
         {/* About 2*/}
-        <div className="relative mt-20">
+        <div className="relative">
           <div className="lg:mx-auto lg:max-w-7xl lg:px-8 lg:grid lg:grid-cols-2 lg:gap-24 lg:items-start">
             <div className="relative mx-auto max-w-md px-4 sm:max-w-3xl sm:px-6 lg:px-0">
               {/* Content area */}
-              <div className="pt-12 px-100px sm:pt-16 lg:pt-20">
+              <div className="pt-1 px-100px sm:pt-16 lg:pt-1">
                 <Flex
                   w={['100%', '100%', '100%', '100%']}
                   direction={['column', 'column', 'row', 'column']}
                   bg={bg}
                   rounded="none"
                   align="center"
-                  minH="70vh"
+                  p={50}
                 >
-                  <PadBoard buttons={SamplePadList} columns={4} buttonSize='150px' />
+                  <PadBoard buttons={SamplePadList} columns={4} buttonSize='90px' />
                 </Flex>
               </div>
             </div>
-            <div className="relative sm:py-16 lg:py-0">
+            <div className="relative sm:py-0 lg:py-0">
               <div
                 aria-hidden="true"
                 className="hidden sm:block lg:absolute lg:inset-y-0 lg:left-0 lg:w-screen"
@@ -450,7 +385,7 @@ export default function Example() {
                   />
                 </svg>
               </div>
-              <div className="relative mx-auto max-w-md px-4 sm:max-w-3xl sm:px-6 lg:px-0 lg:max-w-none lg:py-20">
+              <div className="relative mx-auto max-w-md px-4 sm:max-w-3xl sm:px-6 lg:px-0 lg:max-w-none lg:py-0">
                 {/* Testimonial card*/}
                 <div className="relative pt-64 pb-10 rounded-2xl shadow-xl overflow-hidden">
                   <img
@@ -459,15 +394,9 @@ export default function Example() {
                     alt=""
                   />
                   <div className="absolute inset-0 bg-rose-500 mix-blend-multiply" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-rose-600 via-rose-600 opacity-90" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-rose-600 via-rose-600 opacity-90 hover:opacity-0" />
                   <div className="relative px-8">
-                    <div>
-                      <img
-                        className="h-12"
-                        src="https://tailwindui.com/img/logos/workcation.svg?color=white"
-                        alt="Workcation"
-                      />
-                    </div>
+
                     <blockquote className="mt-8">
                       <div className="relative text-lg font-medium text-white md:flex-grow">
                         <svg
@@ -479,55 +408,18 @@ export default function Example() {
                           <path d="M9.352 4C4.456 7.456 1 13.12 1 19.36c0 5.088 3.072 8.064 6.624 8.064 3.36 0 5.856-2.688 5.856-5.856 0-3.168-2.208-5.472-5.088-5.472-.576 0-1.344.096-1.536.192.48-3.264 3.552-7.104 6.624-9.024L9.352 4zm16.512 0c-4.8 3.456-8.256 9.12-8.256 15.36 0 5.088 3.072 8.064 6.624 8.064 3.264 0 5.856-2.688 5.856-5.856 0-3.168-2.304-5.472-5.184-5.472-.576 0-1.248.096-1.44.192.48-3.264 3.456-7.104 6.528-9.024L25.864 4z" />
                         </svg>
                         <p className="relative">
-                          Tincidunt integer commodo, cursus etiam aliquam neque,
-                          et. Consectetur pretium in volutpat, diam. Montes,
-                          magna cursus nulla feugiat dignissim id lobortis amet.
+                          I play songs that you never knew you needed to hear. My goal is to unite your guests with precision track selection and give every one a Stayin Alive X Hot In Herre blend they never knew they needed.
                         </p>
                       </div>
 
                       <footer className="mt-4">
                         <p className="text-base font-semibold text-rose-200">
-                          LaDell Erby, AKA at DJ YBRE
+                          LaDell Erby, AKA DJ YBRE
                         </p>
                       </footer>
                     </blockquote>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Logo cloud section */}
-        <div className="mt-32">
-          <div className="mx-auto max-w-md px-4 sm:max-w-3xl sm:px-6 lg:px-8 lg:max-w-7xl">
-            <div className="lg:grid lg:grid-cols-2 lg:gap-24 lg:items-center">
-              <div>
-                <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight sm:text-4xl">
-                  Backed by world-renowned investors
-                </h2>
-                <p className="mt-6 max-w-3xl text-lg leading-7 text-gray-500">
-                  Sagittis scelerisque nulla cursus in enim consectetur quam.
-                  Dictum urna sed consectetur neque tristique pellentesque.
-                  Blandit amet, sed aenean erat arcu morbi. Cursus faucibus nunc
-                  nisl netus morbi vel porttitor vitae ut. Amet vitae fames
-                  senectus vitae.
-                </p>
-                <div className="mt-6">
-                  <a href="#" className="text-base font-medium text-rose-500">
-                    Meet our investors and advisors&nbsp&rarr;
-                  </a>
-                </div>
-              </div>
-              <div className="mt-12 grid grid-cols-2 gap-0.5 md:grid-cols-3 lg:mt-0 lg:grid-cols-2">
-                {logos.map((logo) => (
-                  <div
-                    key={logo.name}
-                    className="col-span-1 flex justify-center py-8 px-8 bg-gray-50"
-                  >
-                    <img className="max-h-12" src={logo.url} alt={logo.name} />
-                  </div>
-                ))}
               </div>
             </div>
           </div>
@@ -571,7 +463,7 @@ export default function Example() {
             </svg>
           </div>
           <div className="mx-auto max-w-md px-4 sm:max-w-3xl sm:px-6 lg:max-w-7xl lg:px-8">
-            <div className="relative rounded-2xl px-6 py-10 bg-rose-500 overflow-hidden shadow-xl sm:px-12 sm:py-20">
+            <div className="relative rounded-2xl px-6 py-10 bg-stone-500 overflow-hidden shadow-xl sm:px-12 sm:py-20">
               <div
                 aria-hidden="true"
                 className="absolute inset-0 -mt-72 sm:-mt-32 md:mt-0"
@@ -584,12 +476,12 @@ export default function Example() {
                   viewBox="0 0 1463 360"
                 >
                   <path
-                    className="text-rose-400 text-opacity-40"
+                    className="text-stone-400 text-opacity-40"
                     fill="currentColor"
                     d="M-82.673 72l1761.849 472.086-134.327 501.315-1761.85-472.086z"
                   />
                   <path
-                    className="text-rose-600 text-opacity-40"
+                    className="text-stone-600 text-opacity-40"
                     fill="currentColor"
                     d="M-217.088 544.086L1544.761 72l134.327 501.316-1761.849 472.086z"
                   />
@@ -598,11 +490,10 @@ export default function Example() {
               <div className="relative">
                 <div className="sm:text-center">
                   <h2 className="text-3xl font-extrabold text-white tracking-tight sm:text-4xl">
-                    Get notified when we&rsquo;re launching.
+                    Get notified when I&rsquo;m in the mix!
                   </h2>
-                  <p className="mt-6 mx-auto max-w-2xl text-lg text-rose-100">
-                    Sagittis scelerisque nulla cursus in enim consectetur quam.
-                    Dictum urna sed consectetur neque tristique pellentesque.
+                  <p className="mt-6 mx-auto max-w-2xl text-lg text-stone-100">
+Whenever I have new content out I will send it to your inbox. No promotions, just vibes I want to share with you! Join my journey and tune in! 
                   </p>
                 </div>
                 <form
@@ -616,14 +507,14 @@ export default function Example() {
                     <input
                       id="cta-email"
                       type="email"
-                      className="block w-full border border-transparent rounded-md px-5 py-3 text-base text-gray-900 placeholder-gray-500 shadow-sm focus:outline-none focus:border-transparent focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-rose-500"
+                      className="block w-full border border-transparent rounded-md px-5 py-3 text-base text-gray-900 placeholder-gray-500 shadow-sm focus:outline-none focus:border-transparent focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-stone-500"
                       placeholder="Enter your email"
                     />
                   </div>
                   <div className="mt-4 sm:mt-0 sm:ml-3">
                     <button
                       type="submit"
-                      className="block w-full rounded-md border border-transparent px-5 py-3 bg-gray-900 text-base font-medium text-white shadow hover:bg-black focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-rose-500 sm:px-10"
+                      className="block w-full rounded-md border border-transparent px-5 py-3 bg-gray-900 text-base font-medium text-white shadow hover:bg-black focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-stone-500 sm:px-10"
                     >
                       Notify me
                     </button>
@@ -636,7 +527,7 @@ export default function Example() {
       </main>
 
       {/* Footer section */}
-      <footer className="mt-24 bg-gray-900 sm:mt-12">
+      <footer className="mt-24 bg-stone-900 sm:mt-12">
         <div className="mx-auto max-w-md py-12 px-4 overflow-hidden sm:max-w-3xl sm:px-6 lg:max-w-7xl lg:px-8">
           <nav
             className="-mx-5 -my-2 flex flex-wrap justify-center"
@@ -666,7 +557,7 @@ export default function Example() {
             ))}
           </div>
           <p className="mt-8 text-center text-base text-gray-400">
-            &copy; 2020 Workflow, Inc. All rights reserved.
+            &copy; {new Date().getFullYear()} DJ YBRE, Inc. All rights reserved.
           </p>
         </div>
       </footer>

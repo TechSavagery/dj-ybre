@@ -14,7 +14,6 @@ function PadBoard(props: SoundBoardProps) {
       w={['100%', '100%', '100%', '100%']}
       direction="column"
       rounded="lg"
-      p="4"
       align="center"
       m="2.5px"
     >
@@ -30,6 +29,7 @@ function PadBoard(props: SoundBoardProps) {
             keyName={button.key}
             sound={button.sound}
             buttonSize={props.buttonSize}
+            link={button.link}
           />
         ))}
       </Grid>
