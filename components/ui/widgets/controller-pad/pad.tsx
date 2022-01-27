@@ -3,12 +3,12 @@ import {
   HTMLChakraProps,
   chakra,
   Flex,
-  Kbd,
 } from '@chakra-ui/react';
 import { motion, HTMLMotionProps } from 'framer-motion';
 import useSound from 'use-sound';
 import React from 'react';
 import router from 'next/router';
+import { Center } from '@chakra-ui/react';
 
 type Merge<P, T> = Omit<P, keyof T> & T;
 type MotionButtonProps = Merge<HTMLChakraProps<'div'>, HTMLMotionProps<'div'>>;
@@ -59,18 +59,35 @@ const Pad = ({
       }}
     >
       <Flex>
-        <Kbd
-          color={color}
-          bg={bg}
-          display={['none', 'none', 'none']}
-          h="40px"
-          w="40px"
-        >
-          {keyName}
-        </Kbd>
+        <Center w={buttonSize} h={buttonSize}>
+          <div>
+            {sound === 'N/A' ? renderLinkIcon(buttonName) : null}
+            {sound === 'N/A' ? <p className="">{buttonName}</p> : null}
+          </div>
+        </Center>
       </Flex>
     </MotionButton>
   );
 };
 
 export default Pad;
+function renderLinkIcon(iconName: string): any {
+  switch (iconName) {
+    case 'MixCloud':
+      return (
+        <img src="https://img.icons8.com/windows/50/000000/mixcloud.png" />
+      );
+    case 'Spotify':
+      return (
+        <img src="https://img.icons8.com/ios-filled/50/000000/spotify.png" />
+      );
+    case 'Contact':
+      return <img src="https://img.icons8.com/ios-filled/50/000000/zoom.png" />;
+    case 'Instagram':
+      return (
+        <img src="https://img.icons8.com/ios-filled/50/000000/instagram-new--v1.png" />
+      );
+    default:
+      return '';
+  }
+}
