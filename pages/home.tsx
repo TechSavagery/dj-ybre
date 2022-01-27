@@ -514,7 +514,7 @@ Whenever I have new content out I will send it to your inbox. No promotions, jus
                   <div className="mt-4 sm:mt-0 sm:ml-3">
                     <button
                       type="submit"
-                      className="block w-full rounded-md border border-transparent px-5 py-3 bg-gray-900 text-base font-medium text-white shadow hover:bg-black focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-stone-500 sm:px-10"
+                      className="block w-full rounded-md border border-transparent px-5 py-3 bg-black text-base font-medium text-white shadow hover:bg-black focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-stone-500 sm:px-10"
                     >
                       Notify me
                     </button>

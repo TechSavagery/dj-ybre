@@ -2,26 +2,22 @@ export const LinkPadList: any[] = [
     {
       name: "MixCloud",
       key: "1",
-      sound: "N/A",
-      link:"/",
+      link:"https://www.mixcloud.com/ladell-erby/",
     },
     {
-      name: "Gunshot",
+      name: "Spotify",
       key: "1",
-      sound: "broscience-gunshot",
-      link:"N/A"
+      link:"https://open.spotify.com/user/1225398661/playlists"
     },
     {
-      name: "Gunshot",
+      name: "Contact",
       key: "1",
-      sound: "cash-register",
-      link:"N/A"
+      link:"/contact.html"
     },
     {
-      name: "Too Short Burn Rubber",
+      name: "Instagram",
       key: "1",
-      sound: "its-britney-bitch",
-      link:"N/A"
+      link:"https://www.instagram.com/djybre/"
     },
   ];
   
