@@ -61,8 +61,14 @@ const Pad = ({
       <Flex>
         <Center w={buttonSize} h={buttonSize}>
           <div>
-            {sound === 'N/A' ? renderLinkIcon(buttonName) : null}
-            {sound === 'N/A' ? <p className="">{buttonName}</p> : null}
+            <Center>
+              {sound === 'N/A' ? renderLinkIcon(buttonName) : null}
+            </Center>
+            <Center>
+              {sound === 'N/A' ? (
+                <p className="text-sm text-gray-500">{buttonName}</p>
+              ) : null}
+            </Center>
           </div>
         </Center>
       </Flex>
