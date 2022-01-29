@@ -7,6 +7,7 @@ function MyApp({ Component, pageProps }: AppProps) {
     <>
       <Head>
         <link rel="stylesheet" href="https://rsms.me/inter/inter.css"></link>{' '}
+        <title>DJ YBRE</title>
       </Head>
       <Component {...pageProps} />
     </>
