@@ -1,73 +1,10 @@
-/*
-  This example requires Tailwind CSS v2.0+ 
-  
-  This example requires some changes to your config:
-  
-  ```
-  // tailwind.config.js
-  const colors = require('tailwindcss/colors')
-  
-  module.exports = {
-    // ...
-    theme: {
-      extend: {
-        colors: {
-          rose: colors.rose,
-        },
-      },
-    },
-    plugins: [
-      // ...
-      require('@tailwindcss/forms'),
-    ],
-  }
-  ```
-*/
 import { Flex, useColorModeValue } from '@chakra-ui/react';
 import { ChevronRightIcon, StarIcon } from '@heroicons/react/solid';
-import PadBoard from '../components/ui/widgets/controller-pad/pad-board';
+import PadBoard from '../pages/components/ui/widgets/controller-pad/pad-board';
 import { SamplePadList } from '../utils/pads/sample-pads';
 import { LinkPadList } from '../utils/pads/link-pads';
-import NewsletterForm from '../components/ui/widgets/newsletter-form';
-
-const stats = [
-  { label: 'Founded', value: '2021' },
-  { label: 'Employees', value: '5' },
-  { label: 'Beta Users', value: '521' },
-  { label: 'Raised', value: '$25M' },
-];
-const footerNavigation = {
-  social: [
-    {
-      name: 'MixCloud',
-      href: 'https://www.mixcloud.com/ladell-erby/',
-      icon: (props: any) => (
-        <img src="https://img.icons8.com/windows/35/ffffff/mixcloud.png" />
-      ),
-    },
-    {
-      name: 'Instagram',
-      href: 'https://www.instagram.com/djybre/',
-      icon: (props: any) => (
-        <img src="https://img.icons8.com/ios-filled/35/ffffff/instagram-new--v1.png" />
-      ),
-    },
-    {
-      name: 'Spotify',
-      href: 'https://open.spotify.com/user/1225398661/playlists',
-      icon: (props: any) => (
-        <img src="https://img.icons8.com/ios-filled/35/ffffff/spotify.png" />
-      ),
-    },
-    {
-      name: 'Contact',
-      href: '/contact.html',
-      icon: (props: any) => (
-        <img src="https://img.icons8.com/ios-filled/35/ffffff/zoom.png" />
-      ),
-    },
-  ],
-};
+import NewsletterForm from '../pages/components/ui/widgets/newsletter-form';
+import Footer from './components/ui/footer';
 
 export default function Example() {
   const bg = useColorModeValue('white', '#171923');
@@ -318,9 +255,9 @@ Below are links to my platform that you can use to experience my style. Live set
             <div className="relative sm:py-0 lg:py-0">
               <div
                 aria-hidden="true"
-                className="hidden sm:block lg:absolute lg:inset-y-0 lg:left-0 lg:w-screen"
+                className="hidden sm:block lg:absolute lg:inset-y-0 lg:left-0"
               >
-                <div className="absolute inset-y-0 left-1/2 w-full bg-gray-50 rounded-r-3xl lg:left-72" />
+                <div className="absolute inset-y-0 left-1/2 bg-gray-50 rounded-r-3xl lg:left-72" />
                 <svg
                   className="absolute top-8 right-1/2 -mr-3 lg:-left-8 lg:right-auto lg:top-12"
                   width={404}
@@ -401,25 +338,7 @@ Below are links to my platform that you can use to experience my style. Live set
       </main>
 
       {/* Footer section */}
-      <footer className="mt-24 bg-stone-900 sm:mt-12">
-        <div className="mx-auto max-w-md py-12 px-4 overflow-hidden sm:max-w-3xl sm:px-6 lg:max-w-7xl lg:px-8">
-          <div className="mt-8 flex justify-center space-x-6">
-            {footerNavigation.social.map((item) => (
-              <a
-                key={item.name}
-                href={item.href}
-                className="text-gray-400 hover:text-gray-300"
-              >
-                <span className="sr-only">{item.name}</span>
-                <item.icon className="h-6 w-6" aria-hidden="true" />
-              </a>
-            ))}
-          </div>
-          <p className="mt-8 text-center text-base text-gray-400">
-            &copy; {new Date().getFullYear()} DJ YBRE, Inc. All rights reserved.
-          </p>
-        </div>
-      </footer>
+      <Footer/>
     </div>
   );
 }
