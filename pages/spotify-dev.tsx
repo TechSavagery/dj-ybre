@@ -180,7 +180,7 @@ function classNames(...classes: any[]) {
   return classes.filter(Boolean).join(' ');
 }
 
-export default function Example() {
+export default function SpotifyPlaylists(props: any) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
@@ -285,8 +285,6 @@ export default function Example() {
                       {/* Mega menus */}
                       <Popover.Group className="ml-8">
                         <div className="h-full flex justify-center space-x-8">
-                       
-
                           {navigation.pages.map((page) => (
                             <a
                               key={page.name}
@@ -371,8 +369,14 @@ export default function Example() {
                     <XIcon className="h-6 w-6" aria-hidden="true" />
                   </button>
                 </div>
-
-                {/* Filters */}
+                {/* Filters */}'{' '}
+                <button
+                  type="button"
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Button text
+                </button>
+                '
                 <form className="mt-4">
                   {filters.map((section) => (
                     <Disclosure
@@ -450,6 +454,9 @@ export default function Example() {
 
           {/* Filters */}
           <section aria-labelledby="filter-heading">
+            <h2 id="filter-heading" className="sr-only">
+              Test
+            </h2>
             <h2 id="filter-heading" className="sr-only">
               Filters
             </h2>
@@ -618,6 +625,13 @@ export default function Example() {
                     ))}
                   </div>
                 </div>
+                <button
+                onClick={() => {}}
+                  type="button"
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Clear Filters
+                </button>
               </div>
             </div>
           </section>
@@ -632,12 +646,14 @@ export default function Example() {
             </h2>
 
             <div className="grid grid-cols-1 gap-y-10 sm:grid-cols-2 gap-x-6 lg:grid-cols-3 xl:grid-cols-3 ">
-              {products.map((product) => (
+              {props.playlists.map((playlist: any) => (
                 <div>
-                 <SpotifyCard spotifyUri="spotify:playlist:0WeOFeYGYNEhXHY0y0LJEu" />
-                  <h3 className="mt-4 text-sm text-gray-700">{product.name}</h3>
+                  <SpotifyCard spotifyUri={playlist.uri} />
+                  <h3 className="mt-4 text-sm text-gray-700">
+                    {playlist.name}
+                  </h3>
                   <p className="mt-1 text-lg font-medium text-gray-900">
-                    {product.price}
+                    {playlist.price}
                   </p>
                 </div>
               ))}
@@ -649,4 +665,22 @@ export default function Example() {
       </div>
     </div>
   );
+}
+
+// This function gets called at build time on server-side.
+// It may be called again, on a serverless function, if
+// revalidation is enabled and a new request comes in
+export async function getStaticProps({ req }: any) {
+  const res = await fetch(`${process.env.URL}/api/spotify/playlists`);
+  const playlists = await res.json();
+
+  return {
+    props: {
+      playlists,
+    },
+    // Next.js will attempt to re-generate the page:
+    // - When a request comes in
+    // - At most once every 10 seconds
+    revalidate: 10, // In seconds
+  };
 }
