@@ -15,7 +15,7 @@
   }
   ```
 */
-import { Fragment, useState } from 'react';
+import { Fragment, useRef, useState } from "react";
 import {
   Dialog,
   Disclosure,
@@ -23,109 +23,210 @@ import {
   Popover,
   Tab,
   Transition,
-} from '@headlessui/react';
+} from "@headlessui/react";
 import {
   MenuIcon,
   SearchIcon,
   ShoppingCartIcon,
   UserIcon,
   XIcon,
-} from '@heroicons/react/outline';
-import { ChevronDownIcon } from '@heroicons/react/solid';
-import Footer from './components/ui/footer';
-import SpotifyCard from './components/ui/widgets/spotify/spotify-card';
+} from "@heroicons/react/outline";
+import { CheckIcon, ChevronDownIcon } from "@heroicons/react/solid";
+import Footer from "./components/ui/footer";
+import SpotifyCard from "./components/ui/widgets/spotify/spotify-card";
+import SpotifyPlayer from "react-spotify-player";
+
+import {
+  Card,
+  Metric,
+  Text,
+  List,
+  ListItem,
+  BadgeDelta,
+  Flex,
+  Bold,
+  DeltaType,
+  Grid,
+} from "@tremor/react";
+
+const sales = [
+  {
+    name: "Switzerland",
+    stat: "18.3%",
+    status: "increase",
+  },
+  {
+    name: "Germany",
+    stat: "8.3%",
+    status: "moderateIncrease",
+  },
+  {
+    name: "Italy",
+    stat: "1.6%",
+    status: "unchanged",
+  },
+  {
+    name: "France",
+    stat: "-5.1%",
+    status: "moderateDecrease",
+  },
+];
+
+const profit = [
+  {
+    name: "Switzerland",
+    stat: "1.3%",
+    status: "unchanged",
+  },
+  {
+    name: "Germany",
+    stat: "3.3%",
+    status: "moderateIncrease",
+  },
+  {
+    name: "Italy",
+    stat: "2.6%",
+    status: "moderateIncrease",
+  },
+  {
+    name: "France",
+    stat: "-8.2%",
+    status: "decrease",
+  },
+];
+
+const customers = [
+  {
+    name: "Switzerland",
+    stat: "-6.3%",
+    status: "moderateDecrease",
+  },
+  {
+    name: "Germany",
+    stat: "6.7%",
+    status: "increase",
+  },
+  {
+    name: "Italy",
+    stat: "2.9%",
+    status: "moderateIncrease",
+  },
+  {
+    name: "France",
+    stat: "1.2%",
+    status: "unchanged",
+  },
+];
+
+const categories = [
+  {
+    title: "Sales",
+    metric: "$ 23,456",
+    data: sales,
+  },
+  {
+    title: "Profit",
+    metric: "$ 16,450",
+    data: profit,
+  },
+  {
+    title: "Customers",
+    metric: "456",
+    data: customers,
+  },
+];
 
 const navigation = {
   categories: [
     {
-      name: 'Women',
+      name: "Women",
       featured: [
-        { name: 'Sleep', href: '#' },
-        { name: 'Swimwear', href: '#' },
-        { name: 'Underwear', href: '#' },
+        { name: "Sleep", href: "#" },
+        { name: "Swimwear", href: "#" },
+        { name: "Underwear", href: "#" },
       ],
       collection: [
-        { name: 'Everything', href: '#' },
-        { name: 'Core', href: '#' },
-        { name: 'New Arrivals', href: '#' },
-        { name: 'Sale', href: '#' },
+        { name: "Everything", href: "#" },
+        { name: "Core", href: "#" },
+        { name: "New Arrivals", href: "#" },
+        { name: "Sale", href: "#" },
       ],
       categories: [
-        { name: 'Basic Tees', href: '#' },
-        { name: 'Artwork Tees', href: '#' },
-        { name: 'Bottoms', href: '#' },
-        { name: 'Underwear', href: '#' },
-        { name: 'Accessories', href: '#' },
+        { name: "Basic Tees", href: "#" },
+        { name: "Artwork Tees", href: "#" },
+        { name: "Bottoms", href: "#" },
+        { name: "Underwear", href: "#" },
+        { name: "Accessories", href: "#" },
       ],
       brands: [
-        { name: 'Full Nelson', href: '#' },
-        { name: 'My Way', href: '#' },
-        { name: 'Re-Arranged', href: '#' },
-        { name: 'Counterfeit', href: '#' },
-        { name: 'Significant Other', href: '#' },
+        { name: "Full Nelson", href: "#" },
+        { name: "My Way", href: "#" },
+        { name: "Re-Arranged", href: "#" },
+        { name: "Counterfeit", href: "#" },
+        { name: "Significant Other", href: "#" },
       ],
     },
     {
-      name: 'Men',
+      name: "Men",
       featured: [
-        { name: 'Casual', href: '#' },
-        { name: 'Boxers', href: '#' },
-        { name: 'Outdoor', href: '#' },
+        { name: "Casual", href: "#" },
+        { name: "Boxers", href: "#" },
+        { name: "Outdoor", href: "#" },
       ],
       collection: [
-        { name: 'Everything', href: '#' },
-        { name: 'Core', href: '#' },
-        { name: 'New Arrivals', href: '#' },
-        { name: 'Sale', href: '#' },
+        { name: "Everything", href: "#" },
+        { name: "Core", href: "#" },
+        { name: "New Arrivals", href: "#" },
+        { name: "Sale", href: "#" },
       ],
       categories: [
-        { name: 'Artwork Tees', href: '#' },
-        { name: 'Pants', href: '#' },
-        { name: 'Accessories', href: '#' },
-        { name: 'Boxers', href: '#' },
-        { name: 'Basic Tees', href: '#' },
+        { name: "Artwork Tees", href: "#" },
+        { name: "Pants", href: "#" },
+        { name: "Accessories", href: "#" },
+        { name: "Boxers", href: "#" },
+        { name: "Basic Tees", href: "#" },
       ],
       brands: [
-        { name: 'Significant Other', href: '#' },
-        { name: 'My Way', href: '#' },
-        { name: 'Counterfeit', href: '#' },
-        { name: 'Re-Arranged', href: '#' },
-        { name: 'Full Nelson', href: '#' },
+        { name: "Significant Other", href: "#" },
+        { name: "My Way", href: "#" },
+        { name: "Counterfeit", href: "#" },
+        { name: "Re-Arranged", href: "#" },
+        { name: "Full Nelson", href: "#" },
       ],
     },
   ],
   pages: [
-    { name: 'Home', href: '' },
-    { name: 'Instagram', href: 'https://www.instagram.com/djybre/' },
-    { name: 'Mixcloud', href: '/contact.html' },
-    { name: 'Contact', href: '/contact.html' },
+    { name: "Home", href: "" },
+    { name: "Instagram", href: "https://www.instagram.com/djybre/" },
+    { name: "Mixcloud", href: "/contact.html" },
+    { name: "Contact", href: "/contact.html" },
   ],
 };
 
 const sortOptions = [
-  { name: 'Creation Date', href: '#', current: true },
-  { name: 'Rating (Likes)', href: '#', current: false },
+  { name: "Creation Date", href: "#", current: true },
+  { name: "Rating (Likes)", href: "#", current: false },
 ];
 const filters = [
   {
-    id: 'tag',
-    name: 'Tag',
+    id: "tag",
+    name: "Tag",
     options: [
-      { value: 'wedding', label: 'Wedding', checked: false },
+      { value: "wedding", label: "Wedding", checked: false },
       {
-        value: 'wedding-grand-entrance',
-        label: 'Wedding: Grand Entrance',
+        value: "wedding-grand-entrance",
+        label: "Wedding: Grand Entrance",
         checked: false,
       },
       {
-        value: 'wedding-parent-dances',
-        label: 'Wedding:Parent Dances',
+        value: "wedding-parent-dances",
+        label: "Wedding:Parent Dances",
         checked: true,
       },
-      { value: 'wedding-cocktail', label: 'Wedding: Cocktail', checked: false },
+      { value: "wedding-cocktail", label: "Wedding: Cocktail", checked: false },
       {
-        value: 'wedding-recessional',
-        label: 'Wedding: Recessional',
+        value: "wedding-recessional",
+        label: "Wedding: Recessional",
         checked: false,
       },
     ],
@@ -135,54 +236,65 @@ const activeFilters: any[] = [];
 const products = [
   {
     id: 1,
-    name: 'Earthen Bottle',
-    href: '#',
-    price: '$48',
+    name: "Earthen Bottle",
+    href: "#",
+    price: "$48",
     imageSrc:
-      'https://tailwindui.com/img/ecommerce-images/category-page-04-image-card-01.jpg',
+      "https://tailwindui.com/img/ecommerce-images/category-page-04-image-card-01.jpg",
     imageAlt:
-      'Tall slender porcelain bottle with natural clay textured body and cork stopper.',
+      "Tall slender porcelain bottle with natural clay textured body and cork stopper.",
   },
   {
     id: 2,
-    name: 'Nomad Tumbler',
-    href: '#',
-    price: '$35',
+    name: "Nomad Tumbler",
+    href: "#",
+    price: "$35",
     imageSrc:
-      'https://tailwindui.com/img/ecommerce-images/category-page-04-image-card-02.jpg',
+      "https://tailwindui.com/img/ecommerce-images/category-page-04-image-card-02.jpg",
     imageAlt:
-      'Olive drab green insulated bottle with flared screw lid and flat top.',
+      "Olive drab green insulated bottle with flared screw lid and flat top.",
   },
   {
     id: 3,
-    name: 'Focus Paper Refill',
-    href: '#',
-    price: '$89',
+    name: "Focus Paper Refill",
+    href: "#",
+    price: "$89",
     imageSrc:
-      'https://tailwindui.com/img/ecommerce-images/category-page-04-image-card-03.jpg',
+      "https://tailwindui.com/img/ecommerce-images/category-page-04-image-card-03.jpg",
     imageAlt:
-      'Person using a pen to cross a task off a productivity paper card.',
+      "Person using a pen to cross a task off a productivity paper card.",
   },
   {
     id: 4,
-    name: 'Machined Mechanical Pencil',
-    href: '#',
-    price: '$35',
+    name: "Machined Mechanical Pencil",
+    href: "#",
+    price: "$35",
     imageSrc:
-      'https://tailwindui.com/img/ecommerce-images/category-page-04-image-card-04.jpg',
+      "https://tailwindui.com/img/ecommerce-images/category-page-04-image-card-04.jpg",
     imageAlt:
-      'Hand holding black machined steel mechanical pencil with brass tip and top.',
+      "Hand holding black machined steel mechanical pencil with brass tip and top.",
   },
   // More products...
 ];
 
 function classNames(...classes: any[]) {
-  return classes.filter(Boolean).join(' ');
+  return classes.filter(Boolean).join(" ");
 }
 
 export default function SpotifyPlaylists(props: any) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  const [open, setOpen] = useState(true);
+
+  const [spotifyUri, setSpotifyUri] = useState("");
+
+  const cancelButtonRef = useRef(null);
+
+  const size = {
+    width: "400px",
+    height: "400px",
+  };
 
   return (
     <div className="bg-gray-50">
@@ -369,7 +481,7 @@ export default function SpotifyPlaylists(props: any) {
                     <XIcon className="h-6 w-6" aria-hidden="true" />
                   </button>
                 </div>
-                {/* Filters */}'{' '}
+                {/* Filters */}'{" "}
                 <button
                   type="button"
                   className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
@@ -394,8 +506,8 @@ export default function SpotifyPlaylists(props: any) {
                               <span className="ml-6 flex items-center">
                                 <ChevronDownIcon
                                   className={classNames(
-                                    open ? '-rotate-180' : 'rotate-0',
-                                    'h-5 w-5 transform'
+                                    open ? "-rotate-180" : "rotate-0",
+                                    "h-5 w-5 transform"
                                   )}
                                   aria-hidden="true"
                                 />
@@ -434,6 +546,55 @@ export default function SpotifyPlaylists(props: any) {
                 </form>
               </div>
             </Transition.Child>
+          </Dialog>
+        </Transition.Root>
+        {/* Main Spotify Player */}
+
+        <Transition.Root show={open} as={Fragment}>
+          <Dialog
+            as="div"
+            className="relative z-10"
+            initialFocus={cancelButtonRef}
+            onClose={setOpen}
+          >
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0"
+              enterTo="opacity-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100"
+              leaveTo="opacity-0"
+            >
+              <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+            </Transition.Child>
+
+            <div className="fixed inset-0 z-10 overflow-y-auto">
+              <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                <Transition.Child
+                  as={Fragment}
+                  enter="ease-out duration-300"
+                  enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                  enterTo="opacity-100 translate-y-0 sm:scale-100"
+                  leave="ease-in duration-200"
+                  leaveFrom="opacity-100 translate-y-0 sm:scale-100"
+                  leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                >
+                  <Dialog.Panel className="relative transform rounded-lg bg-transparent px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+                    <SpotifyPlayer
+                      uri="https://open.spotify.com/playlist/2FV9m2NU027Y8nm7b9yBi8"
+                      size={{
+                        width: "500px",
+                        height: "500px",
+                      }}
+                      view="list"
+                      theme="dark"
+                      id="spotify-player"
+                    ></SpotifyPlayer>
+                  </Dialog.Panel>
+                </Transition.Child>
+              </div>
+            </div>
           </Dialog>
         </Transition.Root>
 
@@ -492,10 +653,10 @@ export default function SpotifyPlaylists(props: any) {
                                 href={option.href}
                                 className={classNames(
                                   option.current
-                                    ? 'font-medium text-gray-900'
-                                    : 'text-gray-500',
-                                  active ? 'bg-gray-100' : '',
-                                  'block px-4 py-2 text-sm'
+                                    ? "font-medium text-gray-900"
+                                    : "text-gray-500",
+                                  active ? "bg-gray-100" : "",
+                                  "block px-4 py-2 text-sm"
                                 )}
                               >
                                 {option.name}
@@ -626,7 +787,7 @@ export default function SpotifyPlaylists(props: any) {
                   </div>
                 </div>
                 <button
-                onClick={() => {}}
+                  onClick={() => {}}
                   type="button"
                   className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
@@ -644,11 +805,47 @@ export default function SpotifyPlaylists(props: any) {
             <h2 id="products-heading" className="sr-only">
               Products
             </h2>
+            <Grid numColsSm={2} numColsLg={3} className="gap-6">
+              {categories.map((item) => (
+                <Card key={item.title}>
+                  <Text>{item.title}</Text>
+                  <Metric>{item.metric}</Metric>
+                  <Flex className="mt-6">
+                    <Text>
+                      <Bold>Country</Bold>
+                    </Text>
+                    <Text>
+                      <Bold>WoW (%)</Bold>
+                    </Text>
+                  </Flex>
+                  <List className="mt-1">
+                    {item.data.map((country) => (
+                      <ListItem key={country.name}>
+                        <Flex
+                          justifyContent="start"
+                          className="truncate space-x-2.5"
+                        >
+                          <BadgeDelta deltaType={country.status as DeltaType} />
+                          <Text className="truncate">{country.name}</Text>
+                        </Flex>
+                        <Text>{country.stat}</Text>
+                      </ListItem>
+                    ))}
+                  </List>
+                </Card>
+              ))}
+            </Grid>
 
             <div className="grid grid-cols-1 gap-y-10 sm:grid-cols-2 gap-x-6 lg:grid-cols-3 xl:grid-cols-3 ">
               {props.playlists.map((playlist: any) => (
                 <div>
-                  <SpotifyCard spotifyUri={playlist.uri} />
+                  <SpotifyPlayer
+                    uri={playlist.uri}
+                    size={size}
+                    view="list"
+                    theme="dark"
+                    id="spotify-player"
+                  ></SpotifyPlayer>
                   <h3 className="mt-4 text-sm text-gray-700">
                     {playlist.name}
                   </h3>

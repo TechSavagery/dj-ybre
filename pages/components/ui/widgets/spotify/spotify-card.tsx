@@ -76,8 +76,8 @@ const SpotifyCardBack = ({ spotifyUri }: SpotifyCardProps) => {
   const bg = useColorModeValue('white', 'gray.900');
 
   const size = {
-    width: '350px',
-    height: '350px',
+    width: '100%',
+    height: '100%',
   };
 
   return (
@@ -106,6 +106,8 @@ const SpotifyCardBack = ({ spotifyUri }: SpotifyCardProps) => {
             border-radius: 12px;
             margin-left: 38px;
             margin-top: -1px;
+            height: 100%;
+            width: 100%;
           }
         `}</style>
       ) : (

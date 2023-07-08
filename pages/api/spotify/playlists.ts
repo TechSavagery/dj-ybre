@@ -2,7 +2,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import axios, { AxiosRequestConfig } from 'axios';
 import qs from 'qs';
-import { List } from '@chakra-ui/react';
 
 var client_id = 'a25d5fa2e36b446daeb44fe82e4abdcd';
 var client_secret = '6a3a55c099984ef79fd6cd2e153900ed';
