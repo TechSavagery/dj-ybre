@@ -24,7 +24,13 @@ import {
   Transition,
 } from "@headlessui/react";
 import { MenuIcon, XIcon } from "@heroicons/react/outline";
-import { ChevronDownIcon, ArrowCircleUpIcon, PlusSmIcon, BellIcon, MenuAlt2Icon } from "@heroicons/react/solid";
+import {
+  ChevronDownIcon,
+  ArrowCircleUpIcon,
+  PlusSmIcon,
+  BellIcon,
+  MenuAlt2Icon,
+} from "@heroicons/react/solid";
 import Footer from "./components/ui/footer";
 import SpotifyPlayer from "react-spotify-player";
 
@@ -460,7 +466,6 @@ export default function Playlists(props: any) {
                                       </div>
                                       <div
                                         className={classNames(
-                                          statuses[transaction.status],
                                           "rounded-md py-1 px-2 text-xs font-medium ring-1 ring-inset"
                                         )}
                                       >
@@ -521,85 +526,85 @@ export default function Playlists(props: any) {
           </div>
 
           <Grid numColsSm={2} numColsLg={3} className="gap-6">
-              {categories.map((item) => (
-                <Card key={item.title}>
-                  <Text>{item.title}</Text>
-                  <Metric>{item.metric}</Metric>
-                  <Flex className="mt-6">
-                    <Text>
-                      <Bold>Country</Bold>
-                    </Text>
-                    <Text>
-                      <Bold>WoW (%)</Bold>
-                    </Text>
-                  </Flex>
-                  <List className="mt-1">
-                    {item.data.map((country) => (
-                      <ListItem key={country.name}>
-                        <Flex
-                          justifyContent="start"
-                          className="truncate space-x-2.5"
-                        >
-                          <BadgeDelta deltaType={country.status as DeltaType} />
-                          <Text className="truncate">{country.name}</Text>
-                        </Flex>
-                        <Text>{country.stat}</Text>
-                      </ListItem>
-                    ))}
-                  </List>
-                </Card>
-              ))}
-            </Grid>
+            {categories.map((item) => (
+              <Card key={item.title}>
+                <Text>{item.title}</Text>
+                <Metric>{item.metric}</Metric>
+                <Flex className="mt-6">
+                  <Text>
+                    <Bold>Country</Bold>
+                  </Text>
+                  <Text>
+                    <Bold>WoW (%)</Bold>
+                  </Text>
+                </Flex>
+                <List className="mt-1">
+                  {item.data.map((country) => (
+                    <ListItem key={country.name}>
+                      <Flex
+                        justifyContent="start"
+                        className="truncate space-x-2.5"
+                      >
+                        <BadgeDelta deltaType={country.status as DeltaType} />
+                        <Text className="truncate">{country.name}</Text>
+                      </Flex>
+                      <Text>{country.stat}</Text>
+                    </ListItem>
+                  ))}
+                </List>
+              </Card>
+            ))}
+          </Grid>
 
-                  {/* Main Spotify Player */}
+          {/* Main Spotify Player */}
 
-        <Transition.Root show={open} as={Fragment}>
-          <Dialog
-            as="div"
-            className="relative z-10"
-            initialFocus={cancelButtonRef}
-            onClose={setOpen}
-          >
-            <Transition.Child
-              as={Fragment}
-              enter="ease-out duration-300"
-              enterFrom="opacity-0"
-              enterTo="opacity-100"
-              leave="ease-in duration-200"
-              leaveFrom="opacity-100"
-              leaveTo="opacity-0"
+          <Transition.Root show={open} as={Fragment}>
+            <Dialog
+              as="div"
+              className="relative z-10"
+              initialFocus={cancelButtonRef}
+              onClose={setOpen}
             >
-              <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
-            </Transition.Child>
+              <Transition.Child
+                as={Fragment}
+                enter="ease-out duration-300"
+                enterFrom="opacity-0"
+                enterTo="opacity-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100"
+                leaveTo="opacity-0"
+              >
+                <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+              </Transition.Child>
 
-            <div className="fixed inset-0 z-10 overflow-y-auto">
-              <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-                <Transition.Child
-                  as={Fragment}
-                  enter="ease-out duration-300"
-                  enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                  enterTo="opacity-100 translate-y-0 sm:scale-100"
-                  leave="ease-in duration-200"
-                  leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-                  leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                >
-                  <Dialog.Panel className="relative transform rounded-lg bg-transparent px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
-                    <SpotifyPlayer
-                      uri="https://open.spotify.com/playlist/2FV9m2NU027Y8nm7b9yBi8"
-                      size={{
-                        width: "500px",
-                        height: "500px",
-                      }}
-                      view="list"
-                      theme="dark"
-                      id="spotify-player"
-                    ></SpotifyPlayer>
-                  </Dialog.Panel>
-                </Transition.Child>
+              <div className="fixed inset-0 z-10 overflow-y-auto">
+                <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                  <Transition.Child
+                    as={Fragment}
+                    enter="ease-out duration-300"
+                    enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                    enterTo="opacity-100 translate-y-0 sm:scale-100"
+                    leave="ease-in duration-200"
+                    leaveFrom="opacity-100 translate-y-0 sm:scale-100"
+                    leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                  >
+                    <Dialog.Panel className="relative transform rounded-lg bg-transparent px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+                      <SpotifyPlayer
+                        uri="https://open.spotify.com/playlist/2FV9m2NU027Y8nm7b9yBi8"
+                        size={{
+                          width: "500px",
+                          height: "500px",
+                        }}
+                        view="list"
+                        theme="dark"
+                        id="spotify-player"
+                      ></SpotifyPlayer>
+                    </Dialog.Panel>
+                  </Transition.Child>
+                </div>
               </div>
-            </div>
-          </Dialog>
-        </Transition.Root>
+            </Dialog>
+          </Transition.Root>
         </div>
       </main>
     </>
