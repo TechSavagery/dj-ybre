@@ -261,7 +261,7 @@ const RedirectPage: React.FC = () => {
                 </div>
 
                 <Link
-                  href="https://open.spotify.com/playlist/5aHzp5WJjcStcPqNuSAncK?si=4a33910e543d4179&pt=db2f29c0be264ff729537442cd7d4a8f"
+                  href="https://open.spotify.com/playlist/5aHzp5WJjcStcPqNuSAncK?si=94087031d1ba4355&pt=35d490a23e9adf530df4d35254d4cd02"
                   className="inline-block rounded-md border-2 border-black bg-white px-8 py-3 text-center font-medium text-black hover:bg-black hover:text-white"
                 >
                   Add Request
