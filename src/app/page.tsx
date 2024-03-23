@@ -38,7 +38,7 @@ function Clients() {
       <Container>
         <FadeIn className="flex items-center gap-x-8">
           <h2 className="text-center font-display text-sm font-semibold tracking-wider text-white sm:text-left">
-            We’ve worked with hundreds of amazing people
+            We’ve worked with hundreds of amazing vendors and venues
           </h2>
           <div className="h-px flex-auto bg-neutral-800" />
         </FadeIn>
@@ -68,14 +68,14 @@ function CaseStudies({
 }) {
   return (
     <>
-      <SectionIntro
-        title="Harnessing technology for a brighter future"
+      {/* <SectionIntro
+        title="Professional Beats for Timeless Memories - Your Wedding, Your Soundtrack"
         className="mt-24 sm:mt-32 lg:mt-40"
       >
         <p>
-          We believe technology is the answer to the world’s greatest
-          challenges. It’s also the cause, so we find ourselves in bit of a
-          catch 22 situation.
+          Lets create the perfect event that your guests will talk about for
+          years to come! I will leverage your music preferences and favorite
+          jams and add in 20/20 Crowd Reading Vision to birth the ultimate vibe
         </p>
       </SectionIntro>
       <Container className="mt-16">
@@ -116,7 +116,7 @@ function CaseStudies({
             </FadeIn>
           ))}
         </FadeInStagger>
-      </Container>
+      </Container> */}
     </>
   )
 }
@@ -126,12 +126,13 @@ function Services() {
     <>
       <SectionIntro
         eyebrow="Services"
-        title="We help you identify, explore and respond to new opportunities."
+        title="Professional Beats for Timeless Memories - Your Event, Your Soundtrack"
         className="mt-24 sm:mt-32 lg:mt-40"
       >
         <p>
-          As long as those opportunities involve giving us money to re-purpose
-          old projects — we can come up with an endless number of those.
+          Lets create the perfect event that your guests will talk about for
+          years to come! I will leverage your music preferences and favorite
+          jams and add in 20/20 Crowd Reading Vision to birth the ultimate vibe
         </p>
       </SectionIntro>
       <Container className="mt-16">
@@ -146,24 +147,45 @@ function Services() {
             </FadeIn>
           </div>
           <List className="mt-16 lg:mt-0 lg:w-1/2 lg:min-w-[33rem] lg:pl-4">
-            <ListItem title="Web development">
-              We specialise in crafting beautiful, high quality marketing pages.
-              The rest of the website will be a shell that uses lorem ipsum
-              everywhere.
+            <ListItem title="Wedding Ceremony + Reception">
+              Make your wedding day magical with our DJ services, blending
+              romantic tunes and party hits for a day to remember. From your
+              vows to the last dance, we curate the perfect soundtrack to
+              celebrate your love. With top-tier sound and lighting, we create
+              the atmosphere you've dreamed of, ensuring every moment is
+              unforgettable.
             </ListItem>
-            <ListItem title="Application development">
-              We have a team of skilled developers who are experts in the latest
-              app frameworks, like Angular 1 and Google Web Toolkit.
+            <ListItem title="Corporate Events">
+              Elevate your next corporate event with our premium DJ services,
+              designed to impress clients and colleagues alike. Whether it's a
+              product launch, holiday party, or award ceremony, we provide a
+              professional soundtrack that sets the perfect tone for your event.
+              Our extensive music library ensures we have the right tracks to
+              suit your company's vibe and the occasion's theme. Plus, with our
+              top-notch sound system and lighting, we'll transform your
+              corporate gathering into an extraordinary experience that boosts
+              morale and leaves a lasting impression.
             </ListItem>
-            <ListItem title="E-commerce">
-              We are at the forefront of modern e-commerce development. Which
-              mainly means adding your logo to the Shopify store template we’ve
-              used for the past six years.
+            <ListItem title="Birthday Events">
+              Turn up the fun on your birthday with our dynamic DJ services! No
+              matter what milestone you're celebrating, we've got the tunes to
+              make your birthday bash a hit. From the latest chart-toppers to
+              timeless classics, we'll tailor the playlist to your preferences,
+              ensuring the music resonates with you and your guests. Our
+              engaging DJ will keep the energy high and the dance floor full,
+              making your birthday event memorable for all the right reasons.
+              Get ready to party like it's your birthday—because it is!
             </ListItem>
-            <ListItem title="Custom content management">
-              At Studio we understand the importance of having a robust and
-              customised CMS. That’s why we run all of our client projects out
-              of a single, enormous Joomla instance.
+            <ListItem title="Club Events ">
+              Bring the ultimate party vibe to your club with our electrifying
+              DJ services. Specializing in creating unforgettable nights, we mix
+              the hottest tracks and crowd favorites to keep your patrons
+              dancing until the wee hours. Our expertise in various genres, from
+              EDM to hip-hop, ensures a diverse and vibrant playlist that caters
+              to all tastes. Coupled with cutting-edge sound and lighting, our
+              DJ services will elevate the atmosphere of your club, making every
+              event a sensational hit. Get ready to host the most talked-about
+              nights in town!
             </ListItem>
           </List>
         </div>
@@ -182,15 +204,16 @@ export default async function Home() {
 
   return (
     <>
-      <Container className="mt-24 sm:mt-32 md:mt-56">
+      <Container className="z-40 mt-24 sm:mt-32 md:mt-56">
         <FadeIn className="max-w-3xl">
-          <h1 className="font-display text-5xl font-medium tracking-tight text-neutral-950 [text-wrap:balance] sm:text-7xl">
-            Award-winning development studio based in Denmark.
+          <h1 className="z-40 font-display text-5xl font-medium tracking-tight text-neutral-950 [text-wrap:balance] sm:text-7xl">
+            Open Format Mobile DJ + MC
           </h1>
           <p className="mt-6 text-xl text-neutral-600">
-            We are a development studio working at the intersection of design
-            and technology. It’s a really busy intersection though — a lot of
-            our staff have been involved in hit and runs.
+            Providing custom mixed sound tracks at venues through out the
+            beautiful Central Coast of California. Over 6 years and 100+ events
+            of experience delivering quality audio experience to crowds upwords
+            of 500 guests of all ages and backgrounds.
           </p>
         </FadeIn>
       </Container>
@@ -199,14 +222,14 @@ export default async function Home() {
 
       <CaseStudies caseStudies={caseStudies} />
 
-      <Testimonial
+      {/* <Testimonial
         className="mt-24 sm:mt-32 lg:mt-40"
         client={{ name: 'Phobia', logo: logoPhobiaDark }}
       >
         The team at Studio went above and beyond with our onboarding, even
         finding a way to access the user’s microphone without triggering one of
         those annoying permission dialogs.
-      </Testimonial>
+      </Testimonial> */}
 
       <Services />
 

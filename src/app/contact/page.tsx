@@ -56,10 +56,20 @@ function ContactForm() {
     <FadeIn className="lg:order-last">
       <form>
         <h2 className="font-display text-base font-semibold text-neutral-950">
-          Work inquiries
+          Event Inquiry
         </h2>
         <div className="isolate mt-6 -space-y-px rounded-2xl bg-white/50">
-          <TextInput label="Name" name="name" autoComplete="name" />
+          <TextInput
+            label="First Name"
+            name="first-name"
+            autoComplete="first-name"
+          />
+          <TextInput
+            label="Last Name"
+            name="last-name"
+            autoComplete="last-name"
+          />
+
           <TextInput
             label="Email"
             type="email"
@@ -67,9 +77,9 @@ function ContactForm() {
             autoComplete="email"
           />
           <TextInput
-            label="Company"
-            name="company"
-            autoComplete="organization"
+            label="Venue"
+            name="venue"
+            autoComplete="venue"
           />
           <TextInput label="Phone" type="tel" name="phone" autoComplete="tel" />
           <TextInput label="Message" name="message" />
@@ -96,25 +106,12 @@ function ContactForm() {
 function ContactDetails() {
   return (
     <FadeIn>
-      <h2 className="font-display text-base font-semibold text-neutral-950">
-        Our offices
-      </h2>
-      <p className="mt-6 text-base text-neutral-600">
-        Prefer doing things in person? We don’t but we have to list our
-        addresses here for legal reasons.
-      </p>
-
-      <Offices className="mt-10 grid grid-cols-1 gap-8 sm:grid-cols-2" />
-
       <Border className="mt-16 pt-16">
         <h2 className="font-display text-base font-semibold text-neutral-950">
           Email us
         </h2>
         <dl className="mt-6 grid grid-cols-1 gap-8 text-sm sm:grid-cols-2">
-          {[
-            ['Careers', 'careers@studioagency.com'],
-            ['Press', 'press@studioagency.com'],
-          ].map(([label, email]) => (
+          {[['Info', 'info@djybre.com']].map(([label, email]) => (
             <div key={email}>
               <dt className="font-semibold text-neutral-950">{label}</dt>
               <dd>

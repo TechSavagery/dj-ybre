@@ -30,7 +30,7 @@ function CaseStudies({
     <Container className="mt-40">
       <FadeIn>
         <h2 className="font-display text-2xl font-semibold text-neutral-950">
-          Case studies
+          Rates
         </h2>
       </FadeIn>
       <div className="mt-10 space-y-20 sm:space-y-24 lg:space-y-32">
@@ -55,9 +55,7 @@ function CaseStudies({
                       {caseStudy.service}
                     </p>
                     <p className="text-sm text-neutral-950 lg:mt-2">
-                      <time dateTime={caseStudy.date}>
-                        {formatDate(caseStudy.date)}
-                      </time>
+                      <time dateTime={caseStudy.date}>{caseStudy.date}</time>
                     </p>
                   </div>
                 </div>
@@ -72,20 +70,20 @@ function CaseStudies({
                   </div>
                   <div className="mt-8 flex">
                     <Button
-                      href={caseStudy.href}
+                      href="/contact"
                       aria-label={`Read case study: ${caseStudy.client}`}
                     >
-                      Read case study
+                      Get In Touch
                     </Button>
                   </div>
-                  {caseStudy.testimonial && (
+                  {/* {caseStudy.testimonial && (
                     <Blockquote
                       author={caseStudy.testimonial.author}
                       className="mt-12"
                     >
                       {caseStudy.testimonial.content}
                     </Blockquote>
-                  )}
+                  )} */}
                 </div>
               </Border>
             </article>
@@ -137,9 +135,8 @@ function Clients() {
 }
 
 export const metadata: Metadata = {
-  title: 'Our Work',
-  description:
-    'We believe in efficiency and maximizing our resources to provide the best value to our clients.',
+  title: 'Rates',
+  description: 'Rates for Mobile DJ+MC Services',
 }
 
 export default async function Work() {
@@ -147,10 +144,7 @@ export default async function Work() {
 
   return (
     <>
-      <PageIntro
-        eyebrow="Our work"
-        title="Proven solutions for real-world problems."
-      >
+      <PageIntro eyebrow="" title="">
         <p>
           We believe in efficiency and maximizing our resources to provide the
           best value to our clients. The primary way we do that is by re-using
@@ -160,7 +154,7 @@ export default async function Work() {
 
       <CaseStudies caseStudies={caseStudies} />
 
-      <Testimonial
+      {/* <Testimonial
         className="mt-24 sm:mt-32 lg:mt-40"
         client={{ name: 'Mail Smirk', logo: logoMailSmirk }}
       >
@@ -168,7 +162,7 @@ export default async function Work() {
         delivered something remarkably similar in record time.
       </Testimonial>
 
-      <Clients />
+      <Clients /> */}
 
       <ContactSection />
     </>
