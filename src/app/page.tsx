@@ -1,6 +1,5 @@
 import { type Metadata } from 'next'
 import Image from 'next/image'
-import Link from 'next/link'
 
 import { ContactSection } from '@/components/ContactSection'
 import { Container } from '@/components/Container'
@@ -8,14 +7,12 @@ import { FadeIn, FadeInStagger } from '@/components/FadeIn'
 import { List, ListItem } from '@/components/List'
 import { SectionIntro } from '@/components/SectionIntro'
 import { StylizedImage } from '@/components/StylizedImage'
-import { Testimonial } from '@/components/Testimonial'
 import logoBrightPath from '@/images/clients/bright-path/logo-light.svg'
 import logoFamilyFund from '@/images/clients/family-fund/logo-light.svg'
 import logoGreenLife from '@/images/clients/green-life/logo-light.svg'
 import logoHomeWork from '@/images/clients/home-work/logo-light.svg'
 import logoMailSmirk from '@/images/clients/mail-smirk/logo-light.svg'
 import logoNorthAdventures from '@/images/clients/north-adventures/logo-light.svg'
-import logoPhobiaDark from '@/images/clients/phobia/logo-dark.svg'
 import logoPhobiaLight from '@/images/clients/phobia/logo-light.svg'
 import logoUnseal from '@/images/clients/unseal/logo-light.svg'
 import imageLaptop from '@/images/laptop.jpg'
@@ -38,7 +35,7 @@ function Clients() {
       <Container>
         <FadeIn className="flex items-center gap-x-8">
           <h2 className="text-center font-display text-sm font-semibold tracking-wider text-white sm:text-left">
-            We’ve worked with hundreds of amazing vendors and venues
+            We `&#39;` ve worked with hundreds of amazing vendors and venues
           </h2>
           <div className="h-px flex-auto bg-neutral-800" />
         </FadeIn>
@@ -152,29 +149,29 @@ function Services() {
               romantic tunes and party hits for a day to remember. From your
               vows to the last dance, we curate the perfect soundtrack to
               celebrate your love. With top-tier sound and lighting, we create
-              the atmosphere you've dreamed of, ensuring every moment is
+              the atmosphere you`&#39;`ve dreamed of, ensuring every moment is
               unforgettable.
             </ListItem>
             <ListItem title="Corporate Events">
               Elevate your next corporate event with our premium DJ services,
-              designed to impress clients and colleagues alike. Whether it's a
+              designed to impress clients and colleagues alike. Whether it`&#39;`s a
               product launch, holiday party, or award ceremony, we provide a
               professional soundtrack that sets the perfect tone for your event.
               Our extensive music library ensures we have the right tracks to
-              suit your company's vibe and the occasion's theme. Plus, with our
-              top-notch sound system and lighting, we'll transform your
+              suit your company`&#39;`s vibe and the occasion`&#39;`s theme. Plus, with our
+              top-notch sound system and lighting, we`&#39;`ll transform your
               corporate gathering into an extraordinary experience that boosts
               morale and leaves a lasting impression.
             </ListItem>
             <ListItem title="Birthday Events">
               Turn up the fun on your birthday with our dynamic DJ services! No
-              matter what milestone you're celebrating, we've got the tunes to
+              matter what milestone you`&#39;`re celebrating, we`&#39;`ve got the tunes to
               make your birthday bash a hit. From the latest chart-toppers to
-              timeless classics, we'll tailor the playlist to your preferences,
+              timeless classics, we`&#39;`ll tailor the playlist to your preferences,
               ensuring the music resonates with you and your guests. Our
               engaging DJ will keep the energy high and the dance floor full,
               making your birthday event memorable for all the right reasons.
-              Get ready to party like it's your birthday—because it is!
+              Get ready to party like its your birthday—because it is!
             </ListItem>
             <ListItem title="Club Events ">
               Bring the ultimate party vibe to your club with our electrifying
