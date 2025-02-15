@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import clsx from 'clsx'
+import Image from 'next/image'
 
 function FacebookIcon(props: React.ComponentPropsWithoutRef<'svg'>) {
   return (
@@ -37,6 +38,13 @@ function GitHubIcon(props: React.ComponentPropsWithoutRef<'svg'>) {
   )
 }
 
+  function MixcloudIcon() {
+    return (
+      <Image src="/icons/mixcloud.png" alt="Mixcloud" width={30} height={30} />
+    )
+  }
+
+
 function DribbbleIcon(props: React.ComponentPropsWithoutRef<'svg'>) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
@@ -50,10 +58,16 @@ function DribbbleIcon(props: React.ComponentPropsWithoutRef<'svg'>) {
 }
 
 export const socialMediaProfiles = [
-  { title: 'Facebook', href: 'https://facebook.com', icon: FacebookIcon },
-  { title: 'Instagram', href: 'https://instagram.com/djybre', icon: InstagramIcon },
-  { title: 'GitHub', href: 'https://github.com', icon: GitHubIcon },
-  { title: 'Dribbble', href: 'https://dribbble.com', icon: DribbbleIcon },
+  {
+    title: 'Instagram',
+    href: 'https://instagram.com/djybre',
+    icon: InstagramIcon,
+  },
+  {
+    title: 'Mix Cloud',
+    href: 'https://www.mixcloud.com/djybre/',
+    icon: MixcloudIcon,
+  },
 ]
 
 export function SocialMedia({
