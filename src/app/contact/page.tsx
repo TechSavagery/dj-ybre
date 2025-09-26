@@ -8,6 +8,7 @@ import { Container } from '@/components/Container'
 import { FadeIn } from '@/components/FadeIn'
 import { PageIntro } from '@/components/PageIntro'
 import { SocialMedia } from '@/components/SocialMedia'
+import { useContactForm } from '@/hooks/useContactForm'
 
 function TextInput({
   label,
@@ -51,9 +52,12 @@ function RadioInput({
 }
 
 function ContactForm() {
+  const { formData, sent, isSending, handleInputChange, handleSubmit } =
+    useContactForm()
   return (
     <FadeIn className="lg:order-last">
-      <form>
+      <form onSubmit={handleSubmit}>
+        {' '}
         <h2 className="font-display text-base font-semibold text-neutral-950">
           Event Inquiry
         </h2>
@@ -61,23 +65,53 @@ function ContactForm() {
           <TextInput
             label="First Name"
             name="first-name"
+            value={formData.firstName}
             autoComplete="first-name"
+            onChange={handleInputChange}
           />
           <TextInput
             label="Last Name"
             name="last-name"
+            value={formData.lastName}
             autoComplete="last-name"
+            onChange={handleInputChange}
           />
           <TextInput
             label="Email"
             type="email"
             name="email"
+            value={formData.email}
             autoComplete="email"
+            onChange={handleInputChange}
           />
-          <TextInput label="Venue" name="venue" autoComplete="venue" />
-          <TextInput label="Phone" type="tel" name="phone" autoComplete="tel" />
-          <TextInput label="Event Date" type="date" name="event-date" />
-          <TextInput label="Message" name="message" />
+          <TextInput
+            onChange={handleInputChange}
+            label="Venue"
+            value={formData.venue}
+            name="venue"
+            autoComplete="venue"
+          />
+          <TextInput
+            onChange={handleInputChange}
+            label="Phone"
+            type="tel"
+            name="phone"
+            autoComplete="tel"
+            value={formData.phone}
+          />
+          <TextInput
+            onChange={handleInputChange}
+            label="Event Date"
+            type="date"
+            name="event-date"
+            value={formData.date}
+          />
+          <TextInput
+            onChange={handleInputChange}
+            label="Message"
+            name="message"
+            value={formData.message}
+          />
 
           <div className="border border-neutral-300 px-6 py-8 first:rounded-t-2xl last:rounded-b-2xl">
             <fieldset>
@@ -90,28 +124,38 @@ function ContactForm() {
                   label="Corporate Event"
                   name="event-type"
                   value="corporate"
+                  onChange={handleInputChange}
                 />
                 <RadioInput
                   label="Bar/Club"
                   name="event-type"
                   value="bar-club"
+                  onChange={handleInputChange}
                 />
                 <RadioInput
                   label="Birthday"
                   name="event-type"
                   value="birthday"
+                  onChange={handleInputChange}
                 />
                 <RadioInput
                   label="Non-Profit/Fundraiser"
                   name="event-type"
                   value="nonprofit"
+                  onChange={handleInputChange}
                 />
                 <RadioInput
                   label="School Dance"
                   name="event-type"
                   value="school-dance"
+                  onChange={handleInputChange}
                 />
-                <RadioInput label="Other" name="event-type" value="other" />
+                <RadioInput
+                  onChange={handleInputChange}
+                  label="Other"
+                  name="event-type"
+                  value="other"
+                />
               </div>
             </fieldset>
           </div>
