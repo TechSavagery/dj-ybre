@@ -51,8 +51,9 @@ export function StylizedVideo({
     <div
       className={clsx(
         className,
-        'relative flex aspect-[9/16] w-full',
+        'relative flex aspect-[9/16] w-full max-w-full',
       )}
+      style={{ maxHeight: '100vh' }}
     >
       <svg viewBox={`0 0 ${width} ${height}`} fill="none" className="h-full">
         <g clipPath={`url(#${id}-clip)`} className="group">
@@ -64,8 +65,12 @@ export function StylizedVideo({
                 loop={loop}
                 muted={muted}
                 playsInline={playsInline}
+                preload="auto"
                 className="w-full h-full bg-neutral-100 object-contain"
-                style={{ aspectRatio: `${width} / ${height}` }}
+                style={{ 
+                  aspectRatio: `${width} / ${height}`,
+                  WebkitPlaysinline: playsInline ? 'true' : undefined,
+                } as React.CSSProperties}
                 {...props}
               />
             </foreignObject>

@@ -119,9 +119,9 @@ function Services() {
       <Container className="mt-16">
         <div className="lg:flex lg:items-center lg:justify-end">
           <div className="flex justify-center lg:w-1/2 lg:justify-end lg:pr-12">
-            <FadeIn className="w-[23.625rem] flex-none lg:w-[31.5rem]">
+            <FadeIn className="w-full max-w-[23.625rem] flex-none sm:w-[20rem] lg:w-[31.5rem]">
               <StylizedVideo
-                src="/video/ybre.mov"
+                src="/video/ybre.mp4"
                 className="justify-center lg:justify-end"
               />
             </FadeIn>

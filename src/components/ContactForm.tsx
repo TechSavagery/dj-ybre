@@ -1,24 +1,38 @@
 'use client'
 
-import { useId } from 'react'
+import { useId, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/Button'
 import { FadeIn } from '@/components/FadeIn'
 import { useContactForm } from '@/hooks/useContactForm'
 
+declare global {
+  interface Window {
+    Calendly: {
+      initPopupWidget: (options: { url: string }) => void
+    }
+  }
+}
+
 function TextInput({
   label,
+  type,
+  value,
+  placeholder,
   ...props
 }: React.ComponentPropsWithoutRef<'input'> & { label: string }) {
   let id = useId()
+  const hasValue = value && String(value).length > 0
+  const showPlaceholder = placeholder && !hasValue
 
   return (
     <div className="group relative z-0 transition-all focus-within:z-10">
       <input
-        type="text"
+        type={type || 'text'}
         id={id}
+        value={value}
         {...props}
-        placeholder=" "
+        placeholder={showPlaceholder ? placeholder : ' '}
         className="peer block w-full border border-neutral-300 bg-transparent px-6 pb-4 pt-12 text-base/6 text-neutral-950 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5 group-first:rounded-t-2xl group-last:rounded-b-2xl"
       />
       <label
@@ -74,10 +88,34 @@ function CheckIcon() {
 export function ContactForm() {
   const { formData, sent, isSending, handleInputChange, handleSubmit } =
     useContactForm()
+  const confirmationRef = useRef<HTMLDivElement>(null)
+
+  // Scroll to confirmation message when form is submitted
+  useEffect(() => {
+    if (sent && confirmationRef.current) {
+      setTimeout(() => {
+        confirmationRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        })
+      }, 100) // Small delay to ensure the element is rendered
+    }
+  }, [sent])
+
+  const handleScheduleConsult = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+    if (typeof window !== 'undefined' && window.Calendly) {
+      window.Calendly.initPopupWidget({
+        url: 'https://calendly.com/dj-ybre/consult',
+      })
+    }
+  }
+
   return (
     <FadeIn className="lg:order-last">
       {sent ? (
         <motion.div
+          ref={confirmationRef}
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3 }}
@@ -95,8 +133,16 @@ export function ContactForm() {
             Message Sent!
           </h2>
           <p className="mt-4 text-base/6 text-neutral-600">
-            Thank you for reaching out. I&apos;ll get back to you as soon as possible.
+            Thank you for reaching out. I&apos;ll get back to you as soon as possible. Please use my link below to schedule a consult so that we can meet and sync on your event details!
           </p>
+          <div className="mt-8">
+            <Button
+              onClick={handleScheduleConsult}
+              className="mt-6"
+            >
+              Schedule Consult
+            </Button>
+          </div>
         </motion.div>
       ) : (
         <form onSubmit={handleSubmit}>
@@ -145,9 +191,10 @@ export function ContactForm() {
             <TextInput
               onChange={handleInputChange}
               label="Event Date"
-              type="date"
+              type="text"
               name="date"
               value={formData.date}
+              maxLength={10}
             />
             <TextInput
               onChange={handleInputChange}
