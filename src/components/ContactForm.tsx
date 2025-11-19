@@ -95,7 +95,7 @@ export function ContactForm() {
             Message Sent!
           </h2>
           <p className="mt-4 text-base/6 text-neutral-600">
-            Thank you for reaching out. I'll get back to you as soon as possible.
+            Thank you for reaching out. I&apos;ll get back to you as soon as possible.
           </p>
         </motion.div>
       ) : (
