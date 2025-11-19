@@ -1,6 +1,7 @@
 'use client'
 
 import { useId } from 'react'
+import { motion } from 'framer-motion'
 import { Button } from '@/components/Button'
 import { FadeIn } from '@/components/FadeIn'
 import { useContactForm } from '@/hooks/useContactForm'
@@ -46,119 +47,172 @@ function RadioInput({
   )
 }
 
+function CheckIcon() {
+  return (
+    <motion.svg
+      className="h-6 w-6 text-white"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2.5}
+      initial={{ scale: 0 }}
+      animate={{ scale: 1 }}
+      transition={{ delay: 0.3, type: 'spring', stiffness: 300 }}
+    >
+      <motion.path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M4.5 12.75l6 6 9-13.5"
+        initial={{ pathLength: 0 }}
+        animate={{ pathLength: 1 }}
+        transition={{ delay: 0.6, duration: 0.4 }}
+      />
+    </motion.svg>
+  )
+}
+
 export function ContactForm() {
   const { formData, sent, isSending, handleInputChange, handleSubmit } =
     useContactForm()
   return (
     <FadeIn className="lg:order-last">
-      <form onSubmit={handleSubmit}>
-        {' '}
-        <h2 className="font-display text-base font-semibold text-neutral-950">
-          Event Inquiry
-        </h2>
-        <div className="isolate mt-6 -space-y-px rounded-2xl bg-white/50">
-          <TextInput
-            label="First Name"
-            name="firstName"
-            value={formData.firstName}
-            autoComplete="first-name"
-            onChange={handleInputChange}
-          />
-          <TextInput
-            label="Last Name"
-            name="lastName"
-            value={formData.lastName}
-            autoComplete="last-name"
-            onChange={handleInputChange}
-          />
-          <TextInput
-            label="Email"
-            type="email"
-            name="email"
-            value={formData.email}
-            autoComplete="email"
-            onChange={handleInputChange}
-          />
-          <TextInput
-            onChange={handleInputChange}
-            label="Venue"
-            value={formData.venue}
-            name="venue"
-            autoComplete="venue"
-          />
-          <TextInput
-            onChange={handleInputChange}
-            label="Phone"
-            type="tel"
-            name="phone"
-            autoComplete="tel"
-            value={formData.phone}
-          />
-          <TextInput
-            onChange={handleInputChange}
-            label="Event Date"
-            type="date"
-            name="date"
-            value={formData.date}
-          />
-          <TextInput
-            onChange={handleInputChange}
-            label="Message"
-            name="message"
-            value={formData.message}
-          />
+      {sent ? (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+          className="rounded-2xl border border-neutral-300 bg-white/50 p-10 text-center"
+        >
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+            className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-neutral-950"
+          >
+            <CheckIcon />
+          </motion.div>
+          <h2 className="font-display text-2xl font-semibold text-neutral-950">
+            Message Sent!
+          </h2>
+          <p className="mt-4 text-base/6 text-neutral-600">
+            Thank you for reaching out. I'll get back to you as soon as possible.
+          </p>
+        </motion.div>
+      ) : (
+        <form onSubmit={handleSubmit}>
+          {' '}
+          <h2 className="font-display text-base font-semibold text-neutral-950">
+            Event Inquiry
+          </h2>
+          <div className="isolate mt-6 -space-y-px rounded-2xl bg-white/50">
+            <TextInput
+              label="First Name"
+              name="firstName"
+              value={formData.firstName}
+              autoComplete="first-name"
+              onChange={handleInputChange}
+            />
+            <TextInput
+              label="Last Name"
+              name="lastName"
+              value={formData.lastName}
+              autoComplete="last-name"
+              onChange={handleInputChange}
+            />
+            <TextInput
+              label="Email"
+              type="email"
+              name="email"
+              value={formData.email}
+              autoComplete="email"
+              onChange={handleInputChange}
+            />
+            <TextInput
+              onChange={handleInputChange}
+              label="Venue"
+              value={formData.venue}
+              name="venue"
+              autoComplete="venue"
+            />
+            <TextInput
+              onChange={handleInputChange}
+              label="Phone"
+              type="tel"
+              name="phone"
+              autoComplete="tel"
+              value={formData.phone}
+            />
+            <TextInput
+              onChange={handleInputChange}
+              label="Event Date"
+              type="date"
+              name="date"
+              value={formData.date}
+            />
+            <TextInput
+              onChange={handleInputChange}
+              label="Message"
+              name="message"
+              value={formData.message}
+            />
 
-          <div className="border border-neutral-300 px-6 py-8 first:rounded-t-2xl last:rounded-b-2xl">
-            <fieldset>
-              <legend className="text-base/6 text-neutral-500">
-                Event Type
-              </legend>
-              <div className="mt-6 grid grid-cols-1 gap-8 sm:grid-cols-2">
-                <RadioInput label="Wedding" name="event-type" value="wedding" />
-                <RadioInput
-                  label="Corporate Event"
-                  name="event-type"
-                  value="corporate"
-                  onChange={handleInputChange}
-                />
-                <RadioInput
-                  label="Bar/Club"
-                  name="event-type"
-                  value="bar-club"
-                  onChange={handleInputChange}
-                />
-                <RadioInput
-                  label="Birthday"
-                  name="event-type"
-                  value="birthday"
-                  onChange={handleInputChange}
-                />
-                <RadioInput
-                  label="Non-Profit/Fundraiser"
-                  name="event-type"
-                  value="nonprofit"
-                  onChange={handleInputChange}
-                />
-                <RadioInput
-                  label="School Dance"
-                  name="event-type"
-                  value="school-dance"
-                  onChange={handleInputChange}
-                />
-                <RadioInput
-                  onChange={handleInputChange}
-                  label="Other"
-                  name="event-type"
-                  value="other"
-                />
-              </div>
-            </fieldset>
+            <div className="border border-neutral-300 px-6 py-8 first:rounded-t-2xl last:rounded-b-2xl">
+              <fieldset>
+                <legend className="text-base/6 text-neutral-500">
+                  Event Type
+                </legend>
+                <div className="mt-6 grid grid-cols-1 gap-8 sm:grid-cols-2">
+                  <RadioInput 
+                    label="Wedding" 
+                    name="event-type" 
+                    value="wedding" 
+                    onChange={handleInputChange}
+                  />
+                  <RadioInput
+                    label="Corporate Event"
+                    name="event-type"
+                    value="corporate"
+                    onChange={handleInputChange}
+                  />
+                  <RadioInput
+                    label="Bar/Club"
+                    name="event-type"
+                    value="bar-club"
+                    onChange={handleInputChange}
+                  />
+                  <RadioInput
+                    label="Birthday"
+                    name="event-type"
+                    value="birthday"
+                    onChange={handleInputChange}
+                  />
+                  <RadioInput
+                    label="Non-Profit/Fundraiser"
+                    name="event-type"
+                    value="nonprofit"
+                    onChange={handleInputChange}
+                  />
+                  <RadioInput
+                    label="School Dance"
+                    name="event-type"
+                    value="school-dance"
+                    onChange={handleInputChange}
+                  />
+                  <RadioInput
+                    onChange={handleInputChange}
+                    label="Other"
+                    name="event-type"
+                    value="other"
+                  />
+                </div>
+              </fieldset>
+            </div>
           </div>
-        </div>
-        <Button type="submit" className="mt-10">
-          Let's work together
-        </Button>
-      </form>
+          <Button type="submit" className="mt-10" disabled={isSending}>
+            {isSending ? 'Sending...' : "Let's work together"}
+          </Button>
+        </form>
+      )}
     </FadeIn>
   )
 }

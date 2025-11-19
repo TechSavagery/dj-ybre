@@ -14,12 +14,14 @@ export function Button({
   children,
   ...props
 }: ButtonProps) {
+  const isDisabled = 'disabled' in props && props.disabled
   className = clsx(
     className,
     'inline-flex rounded-full px-4 py-1.5 text-sm font-semibold transition',
     invert
       ? 'bg-white text-neutral-950 hover:bg-neutral-200'
       : 'bg-neutral-950 text-white hover:bg-neutral-800',
+    isDisabled && 'cursor-not-allowed opacity-50 hover:bg-neutral-950',
   )
 
   let inner = <span className="relative top-px">{children}</span>

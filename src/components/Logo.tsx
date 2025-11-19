@@ -53,13 +53,15 @@ export function Logo({
   fillOnHover?: boolean
 }) {
   return (
-    <Image
-      sizes="(max-width: 768px) 100vw, 50vw" // Sizes attribute for responsive images
-      src="/logo.png"
-      width={100}
-      height={100}
-      alt="YBRELOGO"
-      layout="responsive"
-    />
+    <div className={clsx('relative flex-shrink-0 overflow-hidden', className)}>
+      <Image
+        src="/logo.png"
+        width={100}
+        height={100}
+        alt="YBRELOGO"
+        className="h-full w-auto object-contain"
+        style={{ maxWidth: '100%', maxHeight: '100%' }}
+      />
+    </div>
   )
 }

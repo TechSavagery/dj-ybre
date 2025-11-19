@@ -62,15 +62,16 @@ function Header({
 
   return (
     <Container>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <Link
           href="/"
           aria-label="Home"
+          className="flex-shrink-0 max-w-[320px] sm:max-w-[380px] lg:max-w-[450px]"
           onMouseEnter={() => setLogoHovered(true)}
           onMouseLeave={() => setLogoHovered(false)}
         >
           <Logo
-            className="hidden h-8 sm:block"
+            className="h-28 w-auto sm:h-32 lg:h-40"
             invert={invert}
             filled={logoHovered}
           />

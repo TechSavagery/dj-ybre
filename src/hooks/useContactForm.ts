@@ -12,6 +12,7 @@ export const useContactForm = () => {
     venue: '',
     phone: '',
     date: '',
+    'event-type': '',
   })
 
   const [sent, setSent] = useState(false)
@@ -39,6 +40,7 @@ export const useContactForm = () => {
         venue: '',
         phone: '',
         date: '',
+        'event-type': '',
       })
 
       setTimeout(() => {

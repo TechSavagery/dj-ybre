@@ -12,16 +12,22 @@ interface EmailTemplateProps {
   firstName: string
   lastName: string
   email: string
-  subject: string
   message: string
+  venue?: string
+  phone?: string
+  date?: string
+  eventType?: string
 }
 
 const EmailTemplate: React.FC<EmailTemplateProps> = ({
   firstName,
   lastName,
   email,
-  subject,
   message,
+  venue,
+  phone,
+  date,
+  eventType,
 }) => {
   return (
     <Html>
@@ -35,7 +41,13 @@ const EmailTemplate: React.FC<EmailTemplateProps> = ({
 
             <Text style={paragraph}>Email: {email}</Text>
 
-            <Text style={paragraph}>Subject: {subject}</Text>
+            {phone && <Text style={paragraph}>Phone: {phone}</Text>}
+
+            {eventType && <Text style={paragraph}>Event Type: {eventType}</Text>}
+
+            {venue && <Text style={paragraph}>Venue: {venue}</Text>}
+
+            {date && <Text style={paragraph}>Event Date: {date}</Text>}
 
             <Text style={paragraph}>Message: {message}</Text>
           </Section>
