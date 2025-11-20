@@ -53,7 +53,7 @@ export function StylizedVideo({
         className,
         'relative flex aspect-[9/16] w-full max-w-full',
       )}
-      style={{ maxHeight: '100vh' }}
+      style={{ maxHeight: 'calc(100vh - 200px)' }}
     >
       <svg viewBox={`0 0 ${width} ${height}`} fill="none" className="h-full">
         <g clipPath={`url(#${id}-clip)`} className="group">

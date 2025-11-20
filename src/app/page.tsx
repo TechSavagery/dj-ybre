@@ -117,7 +117,7 @@ function Services() {
         </p>
       </SectionIntro>
       <Container className="mt-16">
-        <div className="lg:flex lg:items-center lg:justify-end">
+        <div className="lg:flex lg:items-start lg:justify-end lg:gap-8">
           <div className="flex justify-center lg:w-1/2 lg:justify-end lg:pr-12">
             <FadeIn className="w-full max-w-[23.625rem] flex-none sm:w-[20rem] lg:w-[31.5rem]">
               <StylizedVideo
@@ -126,7 +126,7 @@ function Services() {
               />
             </FadeIn>
           </div>
-          <List className="mt-16 lg:mt-0 lg:w-1/2 lg:min-w-[33rem] lg:pl-4">
+          <List className="mt-16 lg:mt-0 lg:w-1/2 lg:min-w-[33rem] lg:pl-4 lg:flex-shrink-0">
             <ListItem title="Wedding Ceremony + Reception">
               Make your wedding day magical with our DJ services, blending
               romantic tunes and party hits for a day to remember. From your
