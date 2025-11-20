@@ -117,55 +117,53 @@ function Services() {
         </p>
       </SectionIntro>
       <Container className="mt-16">
-        <div className="lg:flex lg:items-start lg:justify-end lg:gap-8">
-          <div className="flex justify-center lg:w-1/2 lg:justify-end lg:pr-12">
-            <FadeIn className="w-full max-w-[23.625rem] flex-none sm:w-[20rem] lg:w-[31.5rem]">
+        <div className="lg:grid lg:grid-cols-2 lg:gap-12 lg:items-start">
+          <div className="flex justify-center mb-16 lg:mb-0">
+            <FadeIn className="w-full max-w-[23.625rem] flex-none sm:w-[20rem] lg:w-full lg:max-w-none">
               <StylizedVideo
                 src="/video/ybre.mp4"
-                className="justify-center lg:justify-end"
+                className="justify-center"
               />
             </FadeIn>
           </div>
-          <List className="mt-16 lg:mt-0 lg:w-1/2 lg:min-w-[33rem] lg:pl-4 lg:flex-shrink-0">
+          <List className="lg:flex-shrink-0">
             <ListItem title="Wedding Ceremony + Reception">
-              Make your wedding day magical with our DJ services, blending
-              romantic tunes and party hits for a day to remember. From your
-              vows to the last dance, we curate the perfect soundtrack to
-              celebrate your love. With top-tier sound and lighting, we create
-              the atmosphere you`&#39;`ve dreamed of, ensuring every moment is
-              unforgettable.
+              I love making wedding days magical by blending romantic tunes and
+              party hits that create moments you`&#39;`ll remember forever. From your
+              vows to the last dance, I curate the perfect soundtrack that
+              celebrates your unique love story. With my top-tier sound and
+              lighting setup, I create the atmosphere you`&#39;`ve dreamed of,
+              reading the room and keeping the energy flowing so every moment
+              feels unforgettable.
             </ListItem>
             <ListItem title="Corporate Events">
-              Elevate your next corporate event with our premium DJ services,
-              designed to impress clients and colleagues alike. Whether it`&#39;`s a
-              product launch, holiday party, or award ceremony, we provide a
-              professional soundtrack that sets the perfect tone for your event.
-              Our extensive music library ensures we have the right tracks to
-              suit your company`&#39;`s vibe and the occasion`&#39;`s theme. Plus, with our
-              top-notch sound system and lighting, we`&#39;`ll transform your
-              corporate gathering into an extraordinary experience that boosts
-              morale and leaves a lasting impression.
+              I bring the energy your corporate event needs to impress clients
+              and colleagues. Whether it`&#39;`s a product launch, holiday party, or
+              award ceremony, I provide a professional soundtrack that sets the
+              perfect tone. My extensive music library means I always have the
+              right tracks to match your company`&#39;`s vibe and the occasion`&#39;`s
+              theme. With my top-notch sound system and lighting, I`&#39;`ll transform
+              your corporate gathering into an experience that boosts morale and
+              leaves everyone talking.
             </ListItem>
             <ListItem title="Birthday Events">
-              Turn up the fun on your birthday with our dynamic DJ services! No
-              matter what milestone you`&#39;`re celebrating, we`&#39;`ve got the tunes to
-              make your birthday bash a hit. From the latest chart-toppers to
-              timeless classics, we`&#39;`ll tailor the playlist to your preferences,
-              ensuring the music resonates with you and your guests. Our
-              engaging DJ will keep the energy high and the dance floor full,
-              making your birthday event memorable for all the right reasons.
-              Get ready to party like its your birthday—because it is!
+              Let`&#39;`s turn up the fun on your birthday! No matter what milestone
+              you`&#39;`re celebrating, I`&#39;`ve got the tunes to make your birthday bash
+              absolutely epic. From the latest chart-toppers to timeless
+              classics, I tailor the playlist to your style, making sure the
+              music hits just right for you and your crew. I keep the energy
+              high and the dance floor packed, making your birthday one for the
+              books. Get ready to party like it`&#39;`s your birthday—because it is!
             </ListItem>
             <ListItem title="Club Events ">
-              Bring the ultimate party vibe to your club with our electrifying
-              DJ services. Specializing in creating unforgettable nights, we mix
-              the hottest tracks and crowd favorites to keep your patrons
-              dancing until the wee hours. Our expertise in various genres, from
-              EDM to hip-hop, ensures a diverse and vibrant playlist that caters
-              to all tastes. Coupled with cutting-edge sound and lighting, our
-              DJ services will elevate the atmosphere of your club, making every
-              event a sensational hit. Get ready to host the most talked-about
-              nights in town!
+              I bring the ultimate party vibe to your club with electrifying
+              mixes that keep the night alive. I specialize in creating
+              unforgettable nights by mixing the hottest tracks and crowd
+              favorites that keep your patrons dancing until the wee hours. My
+              expertise across genres—from EDM to hip-hop—means I craft diverse,
+              vibrant playlists that hit different. With cutting-edge sound and
+              lighting, I elevate your club`&#39;`s atmosphere and make every event
+              the most talked-about night in town!
             </ListItem>
           </List>
         </div>
