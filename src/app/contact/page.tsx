@@ -57,16 +57,21 @@ export const metadata: Metadata = {
   description: 'Let’s work together. We can’t wait to hear from you.',
 }
 
-export default function Contact() {
+export default async function Contact({
+  searchParams,
+}: {
+  searchParams: Promise<{ package?: string }> | { package?: string }
+}) {
+  const params = searchParams instanceof Promise ? await searchParams : searchParams
   return (
     <>
-      <PageIntro eyebrow="Contact us" title="Let’s work together">
-        <p>We can’t wait to hear from you.</p>
+      <PageIntro eyebrow="Contact us" title="Let's work together">
+        <p>We can't wait to hear from you.</p>
       </PageIntro>
 
       <Container className="mt-24 sm:mt-32 lg:mt-40">
         <div className="grid grid-cols-1 gap-x-8 gap-y-24 lg:grid-cols-2">
-          <ContactForm />
+          <ContactForm initialPackage={params?.package} />
           <FadeIn>
             <Border className="mt-16 pt-16">
               <h2 className="font-display text-base font-semibold text-neutral-950">

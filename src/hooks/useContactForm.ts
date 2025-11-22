@@ -1,8 +1,8 @@
 "use client"
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { sendEmail } from '@/lib/sendEmail'
 
-export const useContactForm = () => {
+export const useContactForm = (initialPackage?: string) => {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -13,7 +13,17 @@ export const useContactForm = () => {
     phone: '',
     date: '',
     'event-type': '',
+    package: '',
+    startTime: '',
+    endTime: '',
   })
+
+  // Set initial package from URL params if provided
+  useEffect(() => {
+    if (initialPackage) {
+      setFormData((prev) => ({ ...prev, package: initialPackage }))
+    }
+  }, [initialPackage])
 
   const [sent, setSent] = useState(false)
   const [isSending, setIsSending] = useState(false)
@@ -146,6 +156,9 @@ export const useContactForm = () => {
         phone: '',
         date: '',
         'event-type': '',
+        package: '',
+        startTime: '',
+        endTime: '',
       })
       // Confirmation stays visible indefinitely - no timeout
     } else {

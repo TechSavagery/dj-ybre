@@ -17,6 +17,9 @@ interface EmailTemplateProps {
   phone?: string
   date?: string
   eventType?: string
+  package?: string
+  startTime?: string
+  endTime?: string
 }
 
 const EmailTemplate: React.FC<EmailTemplateProps> = ({
@@ -28,6 +31,9 @@ const EmailTemplate: React.FC<EmailTemplateProps> = ({
   phone,
   date,
   eventType,
+  package: packageName,
+  startTime,
+  endTime,
 }) => {
   return (
     <Html>
@@ -43,11 +49,23 @@ const EmailTemplate: React.FC<EmailTemplateProps> = ({
 
             {phone && <Text style={paragraph}>Phone: {phone}</Text>}
 
-            {eventType && <Text style={paragraph}>Event Type: {eventType}</Text>}
+            {packageName && <Text style={paragraph}>Package: {packageName}</Text>}
 
             {venue && <Text style={paragraph}>Venue: {venue}</Text>}
 
             {date && <Text style={paragraph}>Event Date: {date}</Text>}
+
+            {startTime && <Text style={paragraph}>Start Time: {startTime}</Text>}
+
+            {endTime && <Text style={paragraph}>End Time: {endTime}</Text>}
+
+            {eventType && !packageName && (
+              <Text style={paragraph}>Event Type: {eventType}</Text>
+            )}
+
+            {eventType && packageName && packageName !== 'Wedding Full' && packageName !== 'Wedding Reception Only' && (
+              <Text style={paragraph}>Event Type: {eventType}</Text>
+            )}
 
             <Text style={paragraph}>Message: {message}</Text>
           </Section>

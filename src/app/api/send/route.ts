@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     console.log('📧 RESEND env variable:', process.env.RESEND || 'not set (will send emails)')
 
     // Parse the request body
-    const { firstName, lastName, email, message, venue, phone, date, subject, 'event-type': eventType } =
+    const { firstName, lastName, email, message, venue, phone, date, subject, 'event-type': eventType, package: packageName, startTime, endTime } =
       await request.json()
 
     console.log('📧 Received form data:', {
@@ -28,6 +28,9 @@ export async function POST(request: NextRequest) {
       phone,
       date,
       eventType,
+      packageName,
+      startTime,
+      endTime,
       messageLength: message?.length || 0,
     })
 
@@ -54,7 +57,7 @@ export async function POST(request: NextRequest) {
       from: 'DJ YBRE Leads <leads@djybre.com>',
       to: 'ladell@djybre.com',
       subject: `New Lead: ${firstName} ${lastName}`,
-      react: EmailTemplate({ firstName, lastName, email, message, venue, phone, date, eventType }),
+      react: EmailTemplate({ firstName, lastName, email, message, venue, phone, date, eventType, package: packageName, startTime, endTime }),
       replyTo: email,
     }
 

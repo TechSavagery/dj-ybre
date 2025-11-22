@@ -1,7 +1,8 @@
 'use client'
 
-import { useId, useRef, useEffect } from 'react'
+import { useId, useRef, useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
+import { ChevronDownIcon } from '@heroicons/react/20/solid'
 import { Button } from '@/components/Button'
 import { FadeIn } from '@/components/FadeIn'
 import { useContactForm } from '@/hooks/useContactForm'
@@ -61,6 +62,97 @@ function RadioInput({
   )
 }
 
+function PackagePopover({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string
+  options: Array<{ value: string; label: string }>
+  value: string
+  onChange: (value: string) => void
+}) {
+  let id = useId()
+  const hasValue = value && value !== ''
+  const selectedOption = options.find((opt) => opt.value === value)
+  const [isOpen, setIsOpen] = useState(false)
+  const popoverRef = useRef<HTMLDivElement>(null)
+  
+  // Close popover when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isOpen])
+  
+  return (
+    <div className="group relative z-0 transition-all focus-within:z-10" ref={popoverRef}>
+      <button
+        type="button"
+        id={id}
+        onClick={() => setIsOpen(!isOpen)}
+        className="peer block w-full border border-neutral-300 bg-transparent px-6 pb-4 pt-12 pr-10 text-base/6 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5 group-first:rounded-t-2xl group-last:rounded-b-2xl text-left flex items-center justify-between"
+      >
+        <span className={hasValue ? 'text-neutral-950' : 'text-neutral-500'}>
+          {selectedOption?.label || `Select ${label}`}
+        </span>
+        <ChevronDownIcon
+          aria-hidden="true"
+          className={`size-5 flex-shrink-0 text-neutral-500 absolute right-6 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+        />
+      </button>
+      <label
+        htmlFor={id}
+        className={`pointer-events-none absolute left-6 origin-left text-base/6 transition-all duration-200 ${
+          hasValue || isOpen
+            ? '-translate-y-4 scale-75 font-semibold text-neutral-950 top-3'
+            : 'top-1/2 -mt-3 text-neutral-500'
+        }`}
+      >
+        {label}
+      </label>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.15 }}
+          className="absolute z-10 mt-1 w-full rounded-xl bg-white p-2 text-sm/6 font-semibold text-neutral-950 shadow-lg outline-1 outline-neutral-900/5"
+        >
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => {
+                onChange(option.value)
+                setIsOpen(false)
+              }}
+              className={`block w-full rounded-lg px-3 py-2 text-left transition ${
+                value === option.value
+                  ? 'bg-neutral-950 text-white'
+                  : 'hover:bg-neutral-100 text-neutral-950'
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </motion.div>
+      )}
+    </div>
+  )
+}
+
 function CheckIcon() {
   return (
     <motion.svg
@@ -85,10 +177,15 @@ function CheckIcon() {
   )
 }
 
-export function ContactForm() {
+export function ContactForm({ initialPackage }: { initialPackage?: string }) {
   const { formData, sent, isSending, handleInputChange, handleSubmit } =
-    useContactForm()
+    useContactForm(initialPackage)
   const confirmationRef = useRef<HTMLDivElement>(null)
+
+  const showPackageField = !!initialPackage
+  const isWeddingPackage = formData.package === 'Wedding Full' || formData.package === 'Wedding Reception Only'
+  const showEventType = showPackageField && !isWeddingPackage
+  const showTimeFields = formData.package === 'General Event'
 
   // Scroll to confirmation message when form is submitted
   useEffect(() => {
@@ -135,13 +232,21 @@ export function ContactForm() {
           <p className="mt-4 text-base/6 text-neutral-600">
             Thank you for reaching out. I&apos;ll get back to you as soon as possible. Please use my link below to schedule a consult so that we can meet and sync on your event details!
           </p>
-          <div className="mt-8">
+          <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:justify-center">
             <Button
               onClick={handleScheduleConsult}
               className="mt-6"
             >
               Schedule Consult
             </Button>
+            {!showPackageField && (
+              <Button
+                href="/pricing"
+                className="mt-6"
+              >
+                View Pricing
+              </Button>
+            )}
           </div>
         </motion.div>
       ) : (
@@ -188,6 +293,18 @@ export function ContactForm() {
               autoComplete="tel"
               value={formData.phone}
             />
+            {showPackageField && (
+              <PackagePopover
+                label="Package"
+                value={formData.package}
+                onChange={(value) => handleInputChange({ target: { name: 'package', value } })}
+                options={[
+                  { value: 'Wedding Full', label: 'Wedding Full' },
+                  { value: 'Wedding Reception Only', label: 'Wedding Reception Only' },
+                  { value: 'General Event', label: 'General Event' },
+                ]}
+              />
+            )}
             <TextInput
               onChange={handleInputChange}
               label="Event Date"
@@ -196,6 +313,24 @@ export function ContactForm() {
               value={formData.date}
               maxLength={10}
             />
+            {showTimeFields && (
+              <>
+                <TextInput
+                  onChange={handleInputChange}
+                  label="Event Start Time"
+                  type="time"
+                  name="startTime"
+                  value={formData.startTime}
+                />
+                <TextInput
+                  onChange={handleInputChange}
+                  label="Event End Time"
+                  type="time"
+                  name="endTime"
+                  value={formData.endTime}
+                />
+              </>
+            )}
             <TextInput
               onChange={handleInputChange}
               label="Message"
@@ -203,57 +338,107 @@ export function ContactForm() {
               value={formData.message}
             />
 
-            <div className="border border-neutral-300 px-6 py-8 first:rounded-t-2xl last:rounded-b-2xl">
-              <fieldset>
-                <legend className="text-base/6 text-neutral-500">
-                  Event Type
-                </legend>
-                <div className="mt-6 grid grid-cols-1 gap-8 sm:grid-cols-2">
-                  <RadioInput 
-                    label="Wedding" 
-                    name="event-type" 
-                    value="wedding" 
-                    onChange={handleInputChange}
-                  />
-                  <RadioInput
-                    label="Corporate Event"
-                    name="event-type"
-                    value="corporate"
-                    onChange={handleInputChange}
-                  />
-                  <RadioInput
-                    label="Bar/Club"
-                    name="event-type"
-                    value="bar-club"
-                    onChange={handleInputChange}
-                  />
-                  <RadioInput
-                    label="Birthday"
-                    name="event-type"
-                    value="birthday"
-                    onChange={handleInputChange}
-                  />
-                  <RadioInput
-                    label="Non-Profit/Fundraiser"
-                    name="event-type"
-                    value="nonprofit"
-                    onChange={handleInputChange}
-                  />
-                  <RadioInput
-                    label="School Dance"
-                    name="event-type"
-                    value="school-dance"
-                    onChange={handleInputChange}
-                  />
-                  <RadioInput
-                    onChange={handleInputChange}
-                    label="Other"
-                    name="event-type"
-                    value="other"
-                  />
-                </div>
-              </fieldset>
-            </div>
+            {showEventType && (
+              <div className="border border-neutral-300 px-6 py-8 first:rounded-t-2xl last:rounded-b-2xl">
+                <fieldset>
+                  <legend className="text-base/6 text-neutral-500">
+                    Event Type
+                  </legend>
+                  <div className="mt-6 grid grid-cols-1 gap-8 sm:grid-cols-2">
+                    <RadioInput
+                      label="Corporate Event"
+                      name="event-type"
+                      value="corporate"
+                      onChange={handleInputChange}
+                    />
+                    <RadioInput
+                      label="Bar/Club"
+                      name="event-type"
+                      value="bar-club"
+                      onChange={handleInputChange}
+                    />
+                    <RadioInput
+                      label="Birthday"
+                      name="event-type"
+                      value="birthday"
+                      onChange={handleInputChange}
+                    />
+                    <RadioInput
+                      label="Non-Profit/Fundraiser"
+                      name="event-type"
+                      value="nonprofit"
+                      onChange={handleInputChange}
+                    />
+                    <RadioInput
+                      label="School Dance"
+                      name="event-type"
+                      value="school-dance"
+                      onChange={handleInputChange}
+                    />
+                    <RadioInput
+                      onChange={handleInputChange}
+                      label="Other"
+                      name="event-type"
+                      value="other"
+                    />
+                  </div>
+                </fieldset>
+              </div>
+            )}
+
+            {!showPackageField && (
+              <div className="border border-neutral-300 px-6 py-8 first:rounded-t-2xl last:rounded-b-2xl">
+                <fieldset>
+                  <legend className="text-base/6 text-neutral-500">
+                    Event Type
+                  </legend>
+                  <div className="mt-6 grid grid-cols-1 gap-8 sm:grid-cols-2">
+                    <RadioInput 
+                      label="Wedding" 
+                      name="event-type" 
+                      value="wedding" 
+                      onChange={handleInputChange}
+                    />
+                    <RadioInput
+                      label="Corporate Event"
+                      name="event-type"
+                      value="corporate"
+                      onChange={handleInputChange}
+                    />
+                    <RadioInput
+                      label="Bar/Club"
+                      name="event-type"
+                      value="bar-club"
+                      onChange={handleInputChange}
+                    />
+                    <RadioInput
+                      label="Birthday"
+                      name="event-type"
+                      value="birthday"
+                      onChange={handleInputChange}
+                    />
+                    <RadioInput
+                      label="Non-Profit/Fundraiser"
+                      name="event-type"
+                      value="nonprofit"
+                      onChange={handleInputChange}
+                    />
+                    <RadioInput
+                      label="School Dance"
+                      name="event-type"
+                      value="school-dance"
+                      onChange={handleInputChange}
+                    />
+                    <RadioInput
+                      onChange={handleInputChange}
+                      label="Other"
+                      name="event-type"
+                      value="other"
+                    />
+                  </div>
+                </fieldset>
+              </div>
+            )}
           </div>
           <Button type="submit" className="mt-10" disabled={isSending}>
             {isSending ? 'Sending...' : "Let's work together"}
