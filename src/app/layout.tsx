@@ -1,5 +1,6 @@
 import { type Metadata } from 'next'
 import Script from 'next/script'
+import { Analytics } from '@vercel/analytics/next'
 
 import { RootLayout } from '@/components/RootLayout'
 import { CalendlyLoader } from '@/components/CalendlyLoader'
@@ -23,6 +24,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           strategy="lazyOnload"
         />
         <RootLayout>{children}</RootLayout>
+        <Analytics />
       </body>
     </html>
   )
