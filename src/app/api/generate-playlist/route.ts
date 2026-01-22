@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
     // Save tracks to database
     const savedTracks = await Promise.all(
       selectedTracks.map(async (track, index) => {
-        const features = featuresMap.get(track.id)
+        const features = featuresMap.get(track.id) as any
         const genres = track.artists?.[0]?.genres || []
         
         return db.playlistTrack.create({
