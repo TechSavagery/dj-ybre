@@ -1,4 +1,5 @@
 import { getSpotifyClient, getTracks, getAudioFeatures } from './spotify'
+import { resolveReccoBeatsIdsFromSpotifyIds } from './reccobeats'
 import { db } from './db'
 import type { Prisma } from '@prisma/client'
 
@@ -29,6 +30,7 @@ export async function fetchTrackMetadata(
   duration: number
   previewUrl: string | null
   externalUrl: string
+  reccoBeatsId: string | null
   bpm: number | null
   key: number | null
   mode: number | null
@@ -99,6 +101,24 @@ export async function fetchTrackMetadata(
   // Remove duplicates
   const uniqueGenres = Array.from(new Set(allGenres))
 
+  // Resolve ReccoBeats ID (optional). This lets us persist the 3rd-party id for future lookups.
+  // If ReccoBeats token isn't configured, this will just be null.
+  let reccoBeatsId: string | null = null
+  try {
+    const map = await resolveReccoBeatsIdsFromSpotifyIds([spotifyId])
+    reccoBeatsId = map.get(spotifyId) || null
+  } catch (err) {
+    // Non-fatal (missing token, etc.)
+    reccoBeatsId = null
+  }
+
+  // If audioFeatures came from ReccoBeats fallback, keep the raw payload for storage.
+  const reccoPayload = (audioFeatures as any)?._reccoBeats ?? null
+  const provider =
+    reccoPayload || (audioFeatures && (audioFeatures as any)?._reccoBeatsId)
+      ? 'reccobeats'
+      : 'spotify'
+
   return {
     name: trackData.name,
     artist: trackData.artists[0]?.name || 'Unknown',
@@ -108,6 +128,7 @@ export async function fetchTrackMetadata(
     duration: trackData.duration_ms,
     previewUrl: trackData.preview_url || null,
     externalUrl: trackData.external_urls.spotify,
+    reccoBeatsId,
     bpm: audioFeatures?.tempo || null,
     key: audioFeatures?.key ?? null,
     mode: audioFeatures?.mode ?? null,
@@ -115,7 +136,10 @@ export async function fetchTrackMetadata(
     energy: audioFeatures?.energy ?? null,
     danceability: audioFeatures?.danceability ?? null,
     valence: audioFeatures?.valence ?? null,
-    audioFeatures: audioFeatures,
+    audioFeatures:
+      provider === 'reccobeats'
+        ? { provider, ...reccoPayload }
+        : audioFeatures,
     genres: uniqueGenres,
     releaseDate: trackData.album?.release_date || null,
     popularity: trackData.popularity ?? null,

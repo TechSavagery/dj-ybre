@@ -6,20 +6,45 @@ import { PageIntro } from '@/components/PageIntro'
 import { Border } from '@/components/Border'
 import { Button } from '@/components/Button'
 import { db } from '@/lib/db'
+import {
+  getReccoBeatsAudioFeaturesByTrackIds,
+  resolveReccoBeatsIdsFromSpotifyIds,
+} from '@/lib/reccobeats'
 
 const KEY_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 const MODE_NAMES = ['Minor', 'Major']
 
-function formatKey(key: number | null | undefined, mode: number | null | undefined): string {
-  if (key === null || key === undefined) return 'N/A'
+function formatKey(key: number | null | undefined, mode: number | null | undefined): string | null {
+  if (key === null || key === undefined) return null
   const keyName = KEY_NAMES[key]
   const modeName = mode !== null && mode !== undefined ? MODE_NAMES[mode] : ''
   return `${keyName}${modeName ? ` ${modeName}` : ''}`
 }
 
+function parseReleaseYear(releaseDate?: string | null): number | null {
+  if (!releaseDate) return null
+  const year = Number.parseInt(releaseDate.slice(0, 4), 10)
+  return Number.isFinite(year) ? year : null
+}
+
+function formatDuration(ms: number | null | undefined): string | null {
+  if (!ms && ms !== 0) return null
+  const minutes = Math.floor(ms / 60000)
+  const seconds = Math.floor((ms % 60000) / 1000)
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`
+}
+
+function Pill({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="px-2 py-1 text-xs font-semibold bg-neutral-100 text-neutral-700 rounded">
+      {children}
+    </span>
+  )
+}
+
 async function getTransition(id: string) {
   try {
-    const transition = await db.transition.findUnique({
+    let transition = await db.transition.findUnique({
       where: { id },
       include: {
         tracks: {
@@ -33,6 +58,79 @@ async function getTransition(id: string) {
         },
       },
     })
+
+    if (!transition) return null
+
+    // If existing transitions were created before ReccoBeats enrichment, backfill on demand.
+    const missingTracks = transition.tracks.filter((t: any) => {
+      return (
+        t.bpm == null ||
+        t.key == null ||
+        t.mode == null ||
+        t.danceability == null ||
+        t.energy == null ||
+        t.valence == null ||
+        !t.reccoBeatsId
+      )
+    })
+
+    if (missingTracks.length > 0) {
+      try {
+        const spotifyIds = Array.from(new Set(missingTracks.map((t: any) => t.spotifyId).filter(Boolean)))
+        const reccoIdMap = await resolveReccoBeatsIdsFromSpotifyIds(spotifyIds)
+        const reccoIds = spotifyIds
+          .map((sid) => reccoIdMap.get(sid))
+          .filter((v): v is string => Boolean(v))
+
+        const feats = await getReccoBeatsAudioFeaturesByTrackIds(reccoIds)
+        const byReccoId = new Map<string, any>()
+        for (const f of feats) {
+          const rid = (f as any)?.id || (f as any)?.trackId || (f as any)?.track_id
+          if (typeof rid === 'string') byReccoId.set(rid, f)
+        }
+
+        await Promise.all(
+          missingTracks.map(async (t: any) => {
+            const reccoId = t.reccoBeatsId || reccoIdMap.get(t.spotifyId) || null
+            if (!reccoId) return
+            const f = byReccoId.get(reccoId)
+            if (!f) return
+            await db.transitionTrack.update({
+              where: { id: t.id },
+              data: {
+                reccoBeatsId: reccoId,
+                bpm: t.bpm ?? f.tempo ?? null,
+                key: t.key ?? f.key ?? null,
+                mode: t.mode ?? f.mode ?? null,
+                danceability: t.danceability ?? f.danceability ?? null,
+                energy: t.energy ?? f.energy ?? null,
+                valence: t.valence ?? f.valence ?? null,
+                audioFeatures: { provider: 'reccobeats', ...f },
+              },
+            })
+          })
+        )
+
+        // Re-fetch with updated values for rendering
+        transition = await db.transition.findUnique({
+          where: { id },
+          include: {
+            tracks: {
+              orderBy: { position: 'asc' },
+            },
+            points: {
+              include: {
+                track: true,
+              },
+              orderBy: { timestamp: 'asc' },
+            },
+          },
+        })
+      } catch (e) {
+        // Non-fatal; render what we have.
+        console.error('ReccoBeats backfill failed:', e)
+      }
+    }
     return transition
   } catch (error) {
     console.error('Error fetching transition:', error)
@@ -104,37 +202,26 @@ export default async function TransitionDetailPage({
                             #{track.position}
                           </span>
                         </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4 text-sm">
-                          {track.bpm && (
-                            <div>
-                              <span className="text-neutral-500">BPM:</span>{' '}
-                              <span className="font-semibold text-neutral-950">{Math.round(track.bpm)}</span>
-                            </div>
-                          )}
-                          {track.key !== null && track.key !== undefined && (
-                            <div>
-                              <span className="text-neutral-500">Key:</span>{' '}
-                              <span className="font-semibold text-neutral-950">
-                                {formatKey(track.key, track.mode)}
-                              </span>
-                            </div>
-                          )}
-                          {track.energy !== null && track.energy !== undefined && (
-                            <div>
-                              <span className="text-neutral-500">Energy:</span>{' '}
-                              <span className="font-semibold text-neutral-950">
-                                {Math.round(track.energy * 100)}%
-                              </span>
-                            </div>
-                          )}
-                          {track.danceability !== null && track.danceability !== undefined && (
-                            <div>
-                              <span className="text-neutral-500">Dance:</span>{' '}
-                              <span className="font-semibold text-neutral-950">
-                                {Math.round(track.danceability * 100)}%
-                              </span>
-                            </div>
-                          )}
+
+                        {/* Track feature pills */}
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {parseReleaseYear(track.releaseDate) ? (
+                            <Pill>{parseReleaseYear(track.releaseDate)}</Pill>
+                          ) : null}
+                          {formatDuration(track.duration) ? <Pill>{formatDuration(track.duration)}</Pill> : null}
+                          <Pill>{track.bpm ? `${Math.round(track.bpm)} BPM` : 'BPM —'}</Pill>
+                          {formatKey(track.key, track.mode) ? (
+                            <Pill>{formatKey(track.key, track.mode)}</Pill>
+                          ) : null}
+                          {track.danceability !== null && track.danceability !== undefined ? (
+                            <Pill>Dance {Math.round(track.danceability * 100)}%</Pill>
+                          ) : null}
+                          {track.energy !== null && track.energy !== undefined ? (
+                            <Pill>Energy {Math.round(track.energy * 100)}%</Pill>
+                          ) : null}
+                          {track.valence !== null && track.valence !== undefined ? (
+                            <Pill>Mood {Math.round(track.valence * 100)}%</Pill>
+                          ) : null}
                         </div>
                         {track.genres && track.genres.length > 0 && (
                           <div className="flex flex-wrap gap-2 mt-4">

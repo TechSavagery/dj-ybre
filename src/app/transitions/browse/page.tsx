@@ -14,6 +14,7 @@ import Link from 'next/link'
 
 interface TransitionTrack {
   id: string
+  spotifyId: string
   name: string
   artist: string
   album?: string
@@ -22,6 +23,16 @@ interface TransitionTrack {
   key?: number
   mode?: number
   energy?: number
+  danceability?: number
+  valence?: number
+  acousticness?: number
+  instrumentalness?: number
+  loudness?: number
+  speechiness?: number
+  liveness?: number
+  duration?: number
+  releaseDate?: string
+  genres?: string[]
   position: number
 }
 
@@ -39,11 +50,32 @@ interface Transition {
 const KEY_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 const MODE_NAMES = ['Minor', 'Major']
 
-function formatKey(key: number | null | undefined, mode: number | null | undefined): string {
-  if (key === null || key === undefined) return 'N/A'
+function formatKey(key: number | null | undefined, mode: number | null | undefined): string | null {
+  if (key === null || key === undefined) return null
   const keyName = KEY_NAMES[key]
   const modeName = mode !== null && mode !== undefined ? MODE_NAMES[mode] : ''
   return `${keyName}${modeName ? ` ${modeName}` : ''}`
+}
+
+function parseReleaseYear(releaseDate?: string | null): number | null {
+  if (!releaseDate) return null
+  const year = Number.parseInt(releaseDate.slice(0, 4), 10)
+  return Number.isFinite(year) ? year : null
+}
+
+function formatDuration(ms: number | null | undefined): string | null {
+  if (!ms && ms !== 0) return null
+  const minutes = Math.floor(ms / 60000)
+  const seconds = Math.floor((ms % 60000) / 1000)
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`
+}
+
+function Pill({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="px-2 py-1 text-xs font-semibold bg-neutral-100 text-neutral-700 rounded">
+      {children}
+    </span>
+  )
 }
 
 function TextInput({
@@ -170,15 +202,64 @@ function MultiSelectFilter({
   )
 }
 
-function TransitionCard({ transition }: { transition: Transition }) {
-  const avgBpm = transition.tracks
-    .map((t) => t.bpm)
-    .filter((bpm): bpm is number => bpm !== null && bpm !== undefined)
-    .reduce((acc, bpm, _, arr) => acc + bpm / arr.length, 0) || null
+function TransitionCard({
+  transition,
+  expandedTrackIds,
+  onToggleExpanded,
+}: {
+  transition: Transition
+  expandedTrackIds: Record<string, boolean>
+  onToggleExpanded: (trackDbId: string) => void
+}) {
+  const formatTrackPills = (track: TransitionTrack) => {
+    const bpm =
+      track.bpm !== null && track.bpm !== undefined ? `${Math.round(track.bpm)} BPM` : 'BPM —'
+    const key = formatKey(track.key, track.mode)
+    const energy =
+      track.energy !== null && track.energy !== undefined
+        ? `Energy ${Math.round(track.energy * 100)}%`
+        : null
 
-  const firstTrack = transition.tracks[0]
-  const key = firstTrack?.key
-  const mode = firstTrack?.mode
+    const expanded = Boolean(expandedTrackIds[track.id])
+    const year = parseReleaseYear(track.releaseDate)
+    const duration = formatDuration(track.duration)
+    const dance =
+      track.danceability !== null && track.danceability !== undefined
+        ? `Dance ${Math.round(track.danceability * 100)}%`
+        : null
+    const mood =
+      track.valence !== null && track.valence !== undefined
+        ? `Mood ${Math.round(track.valence * 100)}%`
+        : null
+    const acoustic =
+      track.acousticness !== null && track.acousticness !== undefined
+        ? `Acoustic ${Math.round(track.acousticness * 100)}%`
+        : null
+    const instrumental =
+      track.instrumentalness !== null && track.instrumentalness !== undefined
+        ? `Instrumental ${Math.round(track.instrumentalness * 100)}%`
+        : null
+    const loudness =
+      track.loudness !== null && track.loudness !== undefined
+        ? `Loud ${Math.round(track.loudness * 10) / 10} dB`
+        : null
+    const speech =
+      track.speechiness !== null && track.speechiness !== undefined
+        ? `Speech ${Math.round(track.speechiness * 100)}%`
+        : null
+    const live =
+      track.liveness !== null && track.liveness !== undefined
+        ? `Live ${Math.round(track.liveness * 100)}%`
+        : null
+
+    return {
+      bpm,
+      key,
+      energy,
+      expanded,
+      extras: { year, duration, dance, mood, acoustic, instrumental, loudness, speech, live },
+    }
+  }
 
   return (
     <Link href={`/transitions/${transition.id}`}>
@@ -209,6 +290,42 @@ function TransitionCard({ transition }: { transition: Transition }) {
                     </div>
                     <div className="text-xs text-neutral-600 truncate">
                       {track.artist}
+                    </div>
+                    <div className="mt-1 flex flex-wrap gap-2">
+                      {(() => {
+                        const { bpm, key, energy, expanded, extras } = formatTrackPills(track)
+                        return (
+                          <>
+                            <Pill>{bpm}</Pill>
+                            {key ? <Pill>{key}</Pill> : null}
+                            {energy ? <Pill>{energy}</Pill> : null}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                onToggleExpanded(track.id)
+                              }}
+                              className="text-xs font-semibold text-neutral-600 hover:text-neutral-950"
+                            >
+                              {expanded ? 'Less' : 'More'}
+                            </button>
+                            {expanded ? (
+                              <>
+                                {extras.year ? <Pill>{extras.year}</Pill> : null}
+                                {extras.duration ? <Pill>{extras.duration}</Pill> : null}
+                                {extras.dance ? <Pill>{extras.dance}</Pill> : null}
+                                {extras.mood ? <Pill>{extras.mood}</Pill> : null}
+                                {extras.acoustic ? <Pill>{extras.acoustic}</Pill> : null}
+                                {extras.instrumental ? <Pill>{extras.instrumental}</Pill> : null}
+                                {extras.loudness ? <Pill>{extras.loudness}</Pill> : null}
+                                {extras.speech ? <Pill>{extras.speech}</Pill> : null}
+                                {extras.live ? <Pill>{extras.live}</Pill> : null}
+                              </>
+                            ) : null}
+                          </>
+                        )
+                      })()}
                     </div>
                   </div>
                   {idx < transition.tracks.length - 1 && (
@@ -249,26 +366,9 @@ function TransitionCard({ transition }: { transition: Transition }) {
               </div>
             )}
 
-            {/* Metadata */}
-            <div className="flex flex-wrap gap-4 text-xs text-neutral-600 mt-4">
-              {avgBpm && (
-                <span>
-                  <strong className="text-neutral-950">BPM:</strong> {Math.round(avgBpm)}
-                </span>
-              )}
-              {key !== null && key !== undefined && (
-                <span>
-                  <strong className="text-neutral-950">Key:</strong> {formatKey(key, mode)}
-                </span>
-              )}
-              {firstTrack?.energy !== null && firstTrack?.energy !== undefined && (
-                <span>
-                  <strong className="text-neutral-950">Energy:</strong> {Math.round(firstTrack.energy * 100)}%
-                </span>
-              )}
-              <span>
-                <strong className="text-neutral-950">Tracks:</strong> {transition.tracks.length}
-              </span>
+            {/* Card summary */}
+            <div className="flex flex-wrap gap-2 mt-4">
+              <Pill>{transition.tracks.length} tracks</Pill>
             </div>
 
             {/* Notes preview */}
@@ -287,6 +387,8 @@ function TransitionCard({ transition }: { transition: Transition }) {
 export default function BrowseTransitionsPage() {
   const [transitions, setTransitions] = useState<Transition[]>([])
   const [loading, setLoading] = useState(true)
+  const [expandedTrackIds, setExpandedTrackIds] = useState<Record<string, boolean>>({})
+  const [enrichedSpotifyIds, setEnrichedSpotifyIds] = useState<Record<string, boolean>>({})
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTypes, setSelectedTypes] = useState<string[]>([])
   const [selectedTags, setSelectedTags] = useState<string[]>([])
@@ -348,6 +450,84 @@ export default function BrowseTransitionsPage() {
 
     return () => clearTimeout(timeoutId)
   }, [fetchTransitions])
+
+  // Hydrate missing audio features for existing transitions (ReccoBeats backfill).
+  useEffect(() => {
+    if (loading) return
+    if (transitions.length === 0) return
+
+    const missing = new Set<string>()
+    for (const tr of transitions) {
+      for (const track of tr.tracks) {
+        const spotifyId = track.spotifyId
+        if (!spotifyId || enrichedSpotifyIds[spotifyId]) continue
+        const needs =
+          track.bpm == null ||
+          track.key == null ||
+          track.mode == null ||
+          track.energy == null ||
+          track.danceability == null ||
+          track.valence == null
+        if (needs) missing.add(spotifyId)
+      }
+    }
+
+    const ids = Array.from(missing)
+    if (ids.length === 0) return
+
+    // Chunk to keep URLs reasonable.
+    const chunk = ids.slice(0, 50)
+    const qs = encodeURIComponent(chunk.join(','))
+
+    ;(async () => {
+      try {
+        const res = await fetch(`/api/spotify/tracks?ids=${qs}`)
+        if (!res.ok) return
+        const data = await res.json()
+        const tracks: any[] = Array.isArray(data?.tracks) ? data.tracks : []
+        const bySpotifyId = new Map(tracks.map((t) => [t.id, t]))
+
+        setTransitions((prev) =>
+          prev.map((tr) => ({
+            ...tr,
+            tracks: tr.tracks.map((t) => {
+              const details = bySpotifyId.get((t as any).spotifyId)
+              if (!details) return t
+              return {
+                ...t,
+                bpm: details.bpm ?? t.bpm,
+                key: details.key ?? t.key,
+                mode: details.mode ?? t.mode,
+                energy: details.energy ?? t.energy,
+                danceability: details.danceability ?? t.danceability,
+                valence: details.valence ?? t.valence,
+                acousticness: details.acousticness ?? (t as any).acousticness,
+                instrumentalness: details.instrumentalness ?? (t as any).instrumentalness,
+                loudness: details.loudness ?? (t as any).loudness,
+                speechiness: details.speechiness ?? (t as any).speechiness,
+                liveness: details.liveness ?? (t as any).liveness,
+                duration: details.duration ?? t.duration,
+                releaseDate: details.releaseDate ?? t.releaseDate,
+                genres: details.genres ?? t.genres,
+              }
+            }),
+          }))
+        )
+
+        setEnrichedSpotifyIds((prev) => {
+          const next = { ...prev }
+          for (const id of chunk) next[id] = true
+          return next
+        })
+      } catch (err) {
+        console.error('Failed to hydrate track audio features:', err)
+      }
+    })()
+  }, [loading, transitions, enrichedSpotifyIds])
+
+  const toggleTrackExpanded = useCallback((trackDbId: string) => {
+    setExpandedTrackIds((prev) => ({ ...prev, [trackDbId]: !prev[trackDbId] }))
+  }, [])
 
   const clearFilters = () => {
     setSearchQuery('')
@@ -550,7 +730,11 @@ export default function BrowseTransitionsPage() {
                 <FadeInStagger className="space-y-6">
                   {transitions.map((transition) => (
                     <FadeIn key={transition.id}>
-                      <TransitionCard transition={transition} />
+                      <TransitionCard
+                        transition={transition}
+                        expandedTrackIds={expandedTrackIds}
+                        onToggleExpanded={toggleTrackExpanded}
+                      />
                     </FadeIn>
                   ))}
                 </FadeInStagger>

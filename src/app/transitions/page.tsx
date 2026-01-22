@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useId } from 'react'
 import { motion } from 'framer-motion'
-import { ChevronDownIcon, XMarkIcon, PlusIcon } from '@heroicons/react/20/solid'
+import { ChevronDownIcon, XMarkIcon, PlusIcon, PlayIcon, PauseIcon } from '@heroicons/react/20/solid'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/Button'
@@ -11,6 +11,31 @@ import { FadeIn } from '@/components/FadeIn'
 import { Container } from '@/components/Container'
 import { PageIntro } from '@/components/PageIntro'
 import { TRANSITION_TYPES } from '@/lib/transitions'
+
+const KEY_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+const MODE_NAMES = ['Minor', 'Major']
+
+function formatKey(key: number | null | undefined, mode: number | null | undefined): string | null {
+  if (key === null || key === undefined) return null
+  const keyName = KEY_NAMES[key]
+  const modeName = mode !== null && mode !== undefined ? MODE_NAMES[mode] : null
+  return `${keyName}${modeName ? ` ${modeName}` : ''}`
+}
+
+function formatDuration(ms: number | null | undefined): string | null {
+  if (!ms && ms !== 0) return null
+  const minutes = Math.floor(ms / 60000)
+  const seconds = Math.floor((ms % 60000) / 1000)
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`
+}
+
+function Pill({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="px-2 py-1 text-xs font-semibold bg-neutral-100 text-neutral-700 rounded">
+      {children}
+    </span>
+  )
+}
 
 interface Track {
   id: string
@@ -27,6 +52,16 @@ interface Track {
 interface SelectedTrack extends Track {
   position: number
   fromTrackId?: string | null
+  // Enriched track details
+  releaseYear?: number | null
+  bpm?: number | null
+  key?: number | null
+  mode?: number | null
+  danceability?: number | null
+  energy?: number | null
+  valence?: number | null
+  genres?: string[]
+  reccoBeatsId?: string | null
 }
 
 function TextInput({
@@ -295,11 +330,17 @@ function TrackSearchInput({
   onTrackSelect,
   selectedTracks,
   position,
+  playingPreviewTrackId,
+  onTogglePreview,
+  detailsLoadingByTrackId,
 }: {
   label: string
   onTrackSelect: (track: Track, position: number) => void
   selectedTracks: SelectedTrack[]
   position: number
+  playingPreviewTrackId: string | null
+  onTogglePreview: (trackId: string, previewUrl: string) => void
+  detailsLoadingByTrackId: Record<string, boolean>
 }) {
   const id = useId()
   const [query, setQuery] = useState('')
@@ -352,6 +393,37 @@ function TrackSearchInput({
   }, [isOpen])
 
   const selectedTrack = selectedTracks.find((t) => t.position === position)
+  const isSelectedTrackPlaying = Boolean(
+    selectedTrack?.id && playingPreviewTrackId && selectedTrack.id === playingPreviewTrackId
+  )
+  const isDetailsLoading = Boolean(selectedTrack?.id && detailsLoadingByTrackId[selectedTrack.id])
+
+  const supportingArtists =
+    selectedTrack?.artists && selectedTrack.artists.length > 1
+      ? selectedTrack.artists.slice(1).map((a) => a.name)
+      : []
+
+  const durationLabel = formatDuration(selectedTrack?.duration)
+  const bpmLabel =
+    selectedTrack?.bpm !== null && selectedTrack?.bpm !== undefined
+      ? `${Math.round(selectedTrack.bpm)} BPM`
+      : null
+  const keyLabel = formatKey(selectedTrack?.key, selectedTrack?.mode)
+  const danceLabel =
+    selectedTrack?.danceability !== null && selectedTrack?.danceability !== undefined
+      ? `Dance ${Math.round(selectedTrack.danceability * 100)}%`
+      : null
+  const energyLabel =
+    selectedTrack?.energy !== null && selectedTrack?.energy !== undefined
+      ? `Energy ${Math.round(selectedTrack.energy * 100)}%`
+      : null
+  const moodLabel =
+    selectedTrack?.valence !== null && selectedTrack?.valence !== undefined
+      ? `Mood ${Math.round(selectedTrack.valence * 100)}%`
+      : null
+  const genreList = selectedTrack?.genres?.filter(Boolean) || []
+  const showGenres = genreList.slice(0, 2)
+  const moreGenresCount = Math.max(0, genreList.length - showGenres.length)
 
   return (
     <div className="group relative z-0 transition-all focus-within:z-10" ref={searchRef}>
@@ -360,18 +432,77 @@ function TrackSearchInput({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {selectedTrack.albumImage && (
-                <Image
-                  src={selectedTrack.albumImage}
-                  alt={selectedTrack.album}
-                  width={48}
-                  height={48}
-                  className="w-12 h-12 rounded object-cover"
-                  unoptimized
-                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (selectedTrack.previewUrl) {
+                      onTogglePreview(selectedTrack.id, selectedTrack.previewUrl)
+                    }
+                  }}
+                  disabled={!selectedTrack.previewUrl}
+                  aria-label={
+                    selectedTrack.previewUrl
+                      ? isSelectedTrackPlaying
+                        ? `Pause preview for ${selectedTrack.name}`
+                        : `Play preview for ${selectedTrack.name}`
+                      : `No preview available for ${selectedTrack.name}`
+                  }
+                  title={selectedTrack.previewUrl ? 'Play preview' : 'No preview available'}
+                  className={[
+                    'relative w-12 h-12 rounded overflow-hidden flex-shrink-0',
+                    selectedTrack.previewUrl
+                      ? 'cursor-pointer focus:outline-none focus:ring-2 focus:ring-neutral-950/20 hover:ring-2 hover:ring-neutral-950/10'
+                      : 'cursor-not-allowed opacity-70',
+                  ].join(' ')}
+                >
+                  <Image
+                    src={selectedTrack.albumImage}
+                    alt={selectedTrack.album}
+                    width={48}
+                    height={48}
+                    className="w-12 h-12 object-cover"
+                    unoptimized
+                  />
+                  {selectedTrack.previewUrl && (
+                    <span className="absolute inset-0 grid place-items-center bg-neutral-950/35 opacity-0 transition-opacity group-hover:opacity-100">
+                      {isSelectedTrackPlaying ? (
+                        <PauseIcon className="w-6 h-6 text-white" />
+                      ) : (
+                        <PlayIcon className="w-6 h-6 text-white" />
+                      )}
+                    </span>
+                  )}
+                </button>
               )}
               <div>
                 <div className="font-semibold text-neutral-950">{selectedTrack.name}</div>
                 <div className="text-sm text-neutral-600">{selectedTrack.artist}</div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {isDetailsLoading ? <Pill>Loading details…</Pill> : null}
+                  {!isDetailsLoading ? (
+                    selectedTrack.releaseYear !== null && selectedTrack.releaseYear !== undefined ? (
+                      <Pill>{selectedTrack.releaseYear}</Pill>
+                    ) : (
+                      <Pill>Year —</Pill>
+                    )
+                  ) : null}
+                  {!isDetailsLoading && durationLabel ? <Pill>{durationLabel}</Pill> : null}
+                  {!isDetailsLoading ? <Pill>{bpmLabel ?? 'BPM —'}</Pill> : null}
+                  {keyLabel ? <Pill>{keyLabel}</Pill> : null}
+                  {danceLabel ? <Pill>{danceLabel}</Pill> : null}
+                  {energyLabel ? <Pill>{energyLabel}</Pill> : null}
+                  {moodLabel ? <Pill>{moodLabel}</Pill> : null}
+                  {supportingArtists.length > 0 ? (
+                    <Pill>
+                      feat. {supportingArtists.slice(0, 2).join(', ')}
+                      {supportingArtists.length > 2 ? ` +${supportingArtists.length - 2}` : ''}
+                    </Pill>
+                  ) : null}
+                  {showGenres.map((g) => (
+                    <Pill key={g}>{g}</Pill>
+                  ))}
+                  {moreGenresCount > 0 ? <Pill>+{moreGenresCount} genres</Pill> : null}
+                </div>
               </div>
             </div>
             <button
@@ -461,6 +592,110 @@ export default function TransitionsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState('')
+  const [playingPreviewTrackId, setPlayingPreviewTrackId] = useState<string | null>(null)
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null)
+  const [detailsLoadingByTrackId, setDetailsLoadingByTrackId] = useState<Record<string, boolean>>({})
+
+  const stopPreview = useCallback(() => {
+    const audio = previewAudioRef.current
+    if (!audio) return
+    try {
+      audio.pause()
+      audio.removeAttribute('src')
+      audio.load()
+    } finally {
+      setPlayingPreviewTrackId(null)
+    }
+  }, [])
+
+  const enrichTrackDetails = useCallback(async (trackId: string) => {
+    setDetailsLoadingByTrackId((prev) => ({ ...prev, [trackId]: true }))
+    try {
+      const res = await fetch(`/api/spotify/track/${encodeURIComponent(trackId)}`)
+      if (!res.ok) return
+      const data = await res.json()
+
+      setSelectedTracks((prev) =>
+        prev.map((t) =>
+          t.id === trackId
+            ? {
+                ...t,
+                releaseYear: data.releaseYear ?? null,
+                bpm: data.bpm ?? null,
+                key: data.key ?? null,
+                mode: data.mode ?? null,
+                danceability: data.danceability ?? null,
+                energy: data.energy ?? null,
+                valence: data.valence ?? null,
+                genres: Array.isArray(data.genres) ? data.genres : [],
+                reccoBeatsId: data.reccoBeatsId ?? null,
+              }
+            : t
+        )
+      )
+    } catch (err) {
+      console.error('Failed to enrich track details:', err)
+    } finally {
+      setDetailsLoadingByTrackId((prev) => ({ ...prev, [trackId]: false }))
+    }
+  }, [])
+
+  const togglePreview = useCallback(
+    async (trackId: string, previewUrl: string) => {
+      const audio = previewAudioRef.current
+      if (!audio) return
+
+      // Same track: toggle play/pause
+      if (playingPreviewTrackId === trackId) {
+        if (audio.paused) {
+          try {
+            await audio.play()
+          } catch (err) {
+            console.error('Failed to play preview audio:', err)
+            stopPreview()
+          }
+        } else {
+          audio.pause()
+          setPlayingPreviewTrackId(null)
+        }
+        return
+      }
+
+      // New track: stop existing, load new src, play
+      try {
+        audio.pause()
+        audio.src = previewUrl
+        audio.currentTime = 0
+        audio.load()
+        await audio.play()
+        setPlayingPreviewTrackId(trackId)
+      } catch (err) {
+        console.error('Failed to play preview audio:', err)
+        stopPreview()
+      }
+    },
+    [playingPreviewTrackId, stopPreview]
+  )
+
+  useEffect(() => {
+    const audio = previewAudioRef.current
+    if (!audio) return
+
+    const handleEnded = () => {
+      setPlayingPreviewTrackId(null)
+    }
+
+    audio.addEventListener('ended', handleEnded)
+    return () => {
+      audio.removeEventListener('ended', handleEnded)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!playingPreviewTrackId) return
+    const stillSelected = selectedTracks.some((t) => t.id === playingPreviewTrackId)
+    if (!stillSelected) stopPreview()
+  }, [playingPreviewTrackId, selectedTracks, stopPreview])
 
   const handleTrackSelect = useCallback((track: Track, position: number) => {
     if (!track.id) {
@@ -501,7 +736,9 @@ export default function TransitionsPage() {
         return [...prev, newTrack].sort((a, b) => a.position - b.position)
       }
     })
-  }, [])
+    // Enrich selected track with audio features/genres for pills UI
+    enrichTrackDetails(track.id)
+  }, [enrichTrackDetails])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -590,6 +827,8 @@ export default function TransitionsPage() {
 
       <Container className="mt-24 sm:mt-32 lg:mt-40">
         <FadeIn>
+          {/* Single shared audio element for track previews */}
+          <audio ref={previewAudioRef} preload="none" crossOrigin="anonymous" className="hidden" />
           {submitStatus === 'success' ? (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -624,6 +863,9 @@ export default function TransitionsPage() {
                     onTrackSelect={(track, pos) => handleTrackSelect(track, pos)}
                     selectedTracks={selectedTracks}
                     position={position}
+                    playingPreviewTrackId={playingPreviewTrackId}
+                    onTogglePreview={togglePreview}
+                    detailsLoadingByTrackId={detailsLoadingByTrackId}
                   />
                 ))}
 
