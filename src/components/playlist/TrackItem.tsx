@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { HeartIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid'
 
@@ -64,10 +65,13 @@ export function TrackItem({
         </div>
       )}
       {track.imageUrl && (
-        <img
+        <Image
           src={track.imageUrl}
-          alt={track.album}
-          className="w-12 h-12 rounded"
+          alt={track.album || track.name}
+          width={48}
+          height={48}
+          className="w-12 h-12 rounded object-cover"
+          unoptimized
         />
       )}
       <div className="flex-1 min-w-0">

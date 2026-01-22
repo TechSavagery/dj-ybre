@@ -293,7 +293,7 @@ export default function PlaylistGeneratorPage() {
             AI Playlist Generator
           </h1>
           <p className="mt-4 text-lg text-neutral-600">
-            Tell us about your event and preferences, and we'll create the
+            Tell us about your event and preferences, and we&apos;ll create the
             perfect playlist using AI and Spotify.
           </p>
         </div>
