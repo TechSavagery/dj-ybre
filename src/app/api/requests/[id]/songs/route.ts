@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { fetchTrackMetadata } from '@/lib/transitions'
-import { getAccessTokenForApi } from '@/lib/spotify'
+import { addTracksToSpotifyPlaylist, getUserAccessToken } from '@/lib/spotify'
 
 const prisma = db as any
 
@@ -55,7 +55,16 @@ export async function POST(
     }
 
     const cookieToken = request.cookies.get('spotify_access_token')?.value
-    const accessToken = await getAccessTokenForApi(cookieToken, true)
+    let accessToken: string
+    try {
+      accessToken = await getUserAccessToken(cookieToken)
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Not authenticated with Spotify' },
+        { status: 401 }
+      )
+    }
+
     const metadata = await fetchTrackMetadata(spotifyId, accessToken)
 
     const created = await prisma.songRequestTrack.create({
@@ -86,6 +95,24 @@ export async function POST(
         requesterLastName,
       },
     })
+
+    if (!list.spotifyPlaylistId) {
+      await prisma.songRequestTrack.delete({ where: { id: created.id } })
+      return NextResponse.json(
+        { error: 'Spotify playlist is not configured for this request list.' },
+        { status: 500 }
+      )
+    }
+
+    try {
+      await addTracksToSpotifyPlaylist(accessToken, list.spotifyPlaylistId, [spotifyId])
+    } catch (error) {
+      await prisma.songRequestTrack.delete({ where: { id: created.id } })
+      return NextResponse.json(
+        { error: 'Failed to add song to Spotify playlist' },
+        { status: 502 }
+      )
+    }
 
     return NextResponse.json(
       {

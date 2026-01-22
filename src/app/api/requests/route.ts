@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { createSpotifyPlaylist, getUserAccessToken } from '@/lib/spotify'
 
 const prisma = db as any
 
@@ -35,7 +36,7 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const name = typeof body?.name === 'string' ? body.name.trim() : ''
@@ -50,12 +51,37 @@ export async function POST(request: Request) {
       )
     }
 
+    const cookieToken = request.cookies.get('spotify_access_token')?.value
+    let accessToken: string
+    try {
+      accessToken = await getUserAccessToken(cookieToken)
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Not authenticated with Spotify' },
+        { status: 401 }
+      )
+    }
+
+    let playlist
+    try {
+      const playlistName = `${name} - Request List`
+      const description = `Song requests for ${name} (${eventType} on ${eventDate}).`
+      playlist = await createSpotifyPlaylist(accessToken, playlistName, description, false)
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Failed to create Spotify playlist' },
+        { status: 502 }
+      )
+    }
+
     const list = await prisma.songRequestList.create({
       data: {
         name,
         eventType,
         eventDate,
         eventTime: eventTime || null,
+        spotifyPlaylistId: playlist?.id ?? null,
+        spotifyPlaylistUrl: playlist?.external_urls?.spotify ?? null,
       },
     })
 
@@ -68,6 +94,8 @@ export async function POST(request: Request) {
           eventDate: list.eventDate,
           eventTime: list.eventTime,
           createdAt: list.createdAt,
+          spotifyPlaylistId: list.spotifyPlaylistId,
+          spotifyPlaylistUrl: list.spotifyPlaylistUrl,
           publicUrl: `/requests/${list.id}`,
         },
       },

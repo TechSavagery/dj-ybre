@@ -156,6 +156,15 @@ export async function getTokenFromRefreshToken() {
   }
 }
 
+// Get a user-scoped access token (no client credentials fallback)
+export async function getUserAccessToken(cookieToken?: string | null) {
+  if (cookieToken) {
+    return cookieToken
+  }
+  const tokenData = await getTokenFromRefreshToken()
+  return tokenData.accessToken
+}
+
 // Get access token - tries cookie first, then falls back to refresh token from env
 // This is useful for API endpoints that need Spotify authentication
 // Automatically refreshes tokens when they expire
@@ -348,6 +357,35 @@ export async function getArtists(artistIds: string[], accessToken: string) {
   const client = getSpotifyClient(accessToken)
   const artists = await client.getArtists(artistIds)
   return artists.body.artists
+}
+
+export async function createSpotifyPlaylist(
+  accessToken: string,
+  name: string,
+  description?: string,
+  isPublic = false
+) {
+  const client = getSpotifyClient(accessToken)
+  const me = await client.getMe()
+  const playlist = await client.createPlaylist(me.body.id, name, {
+    public: isPublic,
+    description,
+  })
+  return playlist.body
+}
+
+export async function addTracksToSpotifyPlaylist(
+  accessToken: string,
+  playlistId: string,
+  trackIds: string[]
+) {
+  const client = getSpotifyClient(accessToken)
+  const uris = trackIds
+    .map((id) => (id.startsWith('spotify:track:') ? id : `spotify:track:${id}`))
+    .filter(Boolean)
+
+  if (uris.length === 0) return
+  await client.addTracksToPlaylist(playlistId, uris)
 }
 
 
