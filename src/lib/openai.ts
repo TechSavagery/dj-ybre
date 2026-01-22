@@ -1,12 +1,19 @@
 import OpenAI from 'openai'
 
-if (!process.env.OPENAI_API_KEY) {
-  throw new Error('OPENAI_API_KEY is not set in environment variables')
-}
+let _openai: OpenAI | null = null
+function getOpenAIClient(): OpenAI {
+  if (_openai) return _openai
 
-export const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey) {
+    // IMPORTANT: don't throw at module import time; it breaks `next build` when env vars
+    // aren't present in CI/host and the route isn't invoked.
+    throw new Error('OPENAI_API_KEY is not set in environment variables')
+  }
+
+  _openai = new OpenAI({ apiKey })
+  return _openai
+}
 
 export interface PlaylistContext {
   eventType: string
@@ -30,7 +37,8 @@ export async function generatePlaylistSuggestions(
   targetDuration: number
 ): Promise<string[]> {
   const prompt = buildPlaylistPrompt(context, targetDuration)
-  
+
+  const openai = getOpenAIClient()
   const completion = await openai.chat.completions.create({
     model: 'gpt-4',
     messages: [
@@ -170,6 +178,7 @@ Return a JSON object with:
   "suggestions": ["Song Title - Artist Name", ...]
 }`
 
+  const openai = getOpenAIClient()
   const completion = await openai.chat.completions.create({
     model: 'gpt-4',
     messages: [
@@ -224,6 +233,7 @@ Consider:
 
 Return ONLY a JSON array of track indices in the optimal order, e.g., [5, 2, 8, ...]`
 
+  const openai = getOpenAIClient()
   const completion = await openai.chat.completions.create({
     model: 'gpt-4',
     messages: [
@@ -261,6 +271,7 @@ ${JSON.stringify(context, null, 2)}
 
 Write 2-3 sentences that capture the vibe, era, and personal touches. Make it engaging and specific.`
 
+  const openai = getOpenAIClient()
   const completion = await openai.chat.completions.create({
     model: 'gpt-4',
     messages: [

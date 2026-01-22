@@ -69,16 +69,12 @@ export async function GET(
             const energy = f?.energy ?? null
             const danceability = f?.danceability ?? null
             const valence = f?.valence ?? null
-            const key = f?.key ?? null
-            const mode = f?.mode ?? null
 
             await db.transitionTrack.update({
               where: { id: cached.id },
               data: {
                 reccoBeatsId: reccoId,
                 bpm: cached.bpm ?? bpm,
-                key: cached.key ?? key,
-                mode: cached.mode ?? mode,
                 energy: cached.energy ?? energy,
                 danceability: cached.danceability ?? danceability,
                 valence: cached.valence ?? valence,
@@ -89,8 +85,6 @@ export async function GET(
             // Prefer enriched values in response
             cached.reccoBeatsId = reccoId as any
             cached.bpm = cached.bpm ?? bpm
-            cached.key = cached.key ?? key
-            cached.mode = cached.mode ?? mode
             cached.energy = cached.energy ?? energy
             cached.danceability = cached.danceability ?? danceability
           }
@@ -141,41 +135,13 @@ export async function GET(
 
     let track: any | null = null
     try {
-      // Passing market can avoid "forbidden" responses on some catalog entries.
-      track = (await client.getTrack(id, { market: 'from_token' as any }))?.body
+      track = (await client.getTrack(id))?.body
     } catch (err: any) {
       console.error('Spotify track details error (getTrack):', {
         status: err?.statusCode,
         message: err?.message,
         body: err?.body,
       })
-    }
-
-    let features: any | null = null
-    try {
-      features = (await client.getAudioFeaturesForTracks([id]))?.body?.audio_features?.[0] ?? null
-    } catch (err: any) {
-      console.error('Spotify track details error (getAudioFeatures):', {
-        status: err?.statusCode,
-        message: err?.message,
-        body: err?.body,
-      })
-    }
-
-    // Fallback: some apps/tokens get 403 on audio-features; audio-analysis can still work
-    // for tempo/key/mode/time signature in many cases.
-    let analysisTrack: any | null = null
-    if (!features || features?.tempo == null) {
-      try {
-        const analysis = await client.getAudioAnalysisForTrack(id)
-        analysisTrack = analysis?.body?.track ?? null
-      } catch (err: any) {
-        console.error('Spotify track details error (getAudioAnalysis):', {
-          status: err?.statusCode,
-          message: err?.message,
-          body: err?.body,
-        })
-      }
     }
 
     if (!track) {
@@ -222,12 +188,13 @@ export async function GET(
       reccoFeatures = null
     }
 
-    const bpm = features?.tempo ?? analysisTrack?.tempo ?? reccoFeatures?.tempo ?? null
-    const danceability = features?.danceability ?? reccoFeatures?.danceability ?? null
-    const energy = features?.energy ?? reccoFeatures?.energy ?? null
-    const valence = features?.valence ?? reccoFeatures?.valence ?? null
-    const key = features?.key ?? analysisTrack?.key ?? reccoFeatures?.key ?? null
-    const mode = features?.mode ?? analysisTrack?.mode ?? reccoFeatures?.mode ?? null
+    const bpm = reccoFeatures?.tempo ?? null
+    const danceability = reccoFeatures?.danceability ?? null
+    const energy = reccoFeatures?.energy ?? null
+    const valence = reccoFeatures?.valence ?? null
+    // ReccoBeats audio-features does not provide musical key/mode; leave these as null.
+    const key = null
+    const mode = null
 
     return NextResponse.json({
       id,

@@ -55,8 +55,6 @@ export async function GET(request: NextRequest) {
       if (!r) return false
       return (
         r.bpm == null ||
-        r.key == null ||
-        r.mode == null ||
         r.danceability == null ||
         r.energy == null ||
         r.valence == null ||
@@ -92,8 +90,6 @@ export async function GET(request: NextRequest) {
             data: {
               reccoBeatsId: reccoId,
               bpm: row.bpm ?? f.tempo ?? null,
-              key: row.key ?? f.key ?? null,
-              mode: row.mode ?? f.mode ?? null,
               danceability: row.danceability ?? f.danceability ?? null,
               energy: row.energy ?? f.energy ?? null,
               valence: row.valence ?? f.valence ?? null,

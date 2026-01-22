@@ -235,67 +235,68 @@ export async function searchSpotify(query: string, accessToken: string, limit = 
 }
 
 // Get track audio features
-export async function getAudioFeatures(trackIds: string[], accessToken: string) {
-  const client = getSpotifyClient(accessToken)
+// NOTE: Spotify audio-features/audio-analysis endpoints are no longer called.
+// We use ReccoBeats for tempo/energy/danceability/valence and return a Spotify-shaped subset.
+export async function getAudioFeatures(trackIds: string[], _accessToken: string) {
+  if (trackIds.length === 0) return []
+
   try {
-    const features = await client.getAudioFeaturesForTracks(trackIds)
-    return features.body.audio_features
-  } catch (error: any) {
-    // Spotify has restricted/deprecated audio-features for many apps; fall back to ReccoBeats.
-    const status = error?.statusCode || error?.status
-    if (status !== 403) {
-      throw error
+    const reccoIdMap = await resolveReccoBeatsIdsFromSpotifyIds(trackIds)
+    const reccoIds = trackIds
+      .map((sid) => reccoIdMap.get(sid))
+      .filter((v): v is string => Boolean(v))
+
+    const reccoFeatures = await getReccoBeatsAudioFeaturesByTrackIds(reccoIds)
+
+    const byReccoId = new Map<string, any>()
+    for (const f of reccoFeatures) {
+      const id = (f as any)?.id || (f as any)?.trackId || (f as any)?.track_id
+      if (typeof id === 'string') byReccoId.set(id, f)
     }
 
-    try {
-      const reccoIdMap = await resolveReccoBeatsIdsFromSpotifyIds(trackIds)
-      const reccoIds = trackIds
-        .map((sid) => reccoIdMap.get(sid))
-        .filter((v): v is string => Boolean(v))
+    return trackIds.map((spotifyId) => {
+      const reccoId = reccoIdMap.get(spotifyId) || null
+      const f = reccoId ? byReccoId.get(reccoId) : null
 
-      const reccoFeatures = await getReccoBeatsAudioFeaturesByTrackIds(reccoIds)
-
-      const byReccoId = new Map<string, any>()
-      for (const f of reccoFeatures) {
-        const id = (f as any)?.id || (f as any)?.trackId || (f as any)?.track_id
-        if (typeof id === 'string') byReccoId.set(id, f)
-      }
-
-      // Return a Spotify-shaped subset so existing code keeps working.
-      return trackIds.map((spotifyId) => {
-        const reccoId = reccoIdMap.get(spotifyId) || null
-        const f = reccoId ? byReccoId.get(reccoId) : null
-        return {
-          id: spotifyId,
-          tempo: f?.tempo ?? null,
-          energy: f?.energy ?? null,
-          danceability: f?.danceability ?? null,
-          valence: f?.valence ?? null,
-          // ReccoBeats provides these on their /audio-features
-          key: f?.key ?? null,
-          mode: f?.mode ?? null,
-          time_signature: null,
-          // keep extras for downstream optional use
-          _reccoBeatsId: reccoId,
-          _reccoBeats: f ?? null,
-        }
-      })
-    } catch (fallbackError) {
-      // If fallback fails (missing token, not found), behave like Spotify restriction.
-      console.error('ReccoBeats fallback for audio features failed:', fallbackError)
-      return trackIds.map((id) => ({
-        id,
-        tempo: null,
-        energy: null,
-        danceability: null,
-        valence: null,
+      return {
+        id: spotifyId,
+        tempo: f?.tempo ?? null,
+        energy: f?.energy ?? null,
+        danceability: f?.danceability ?? null,
+        valence: f?.valence ?? null,
+        acousticness: f?.acousticness ?? null,
+        instrumentalness: f?.instrumentalness ?? null,
+        loudness: f?.loudness ?? null,
+        speechiness: f?.speechiness ?? null,
+        liveness: f?.liveness ?? null,
+        // ReccoBeats audio-features does not provide key/mode/time signature.
         key: null,
         mode: null,
         time_signature: null,
-        _reccoBeatsId: null,
-        _reccoBeats: null,
-      }))
-    }
+        // keep extras for downstream optional use
+        _reccoBeatsId: reccoId,
+        _reccoBeats: f ?? null,
+      }
+    })
+  } catch (fallbackError) {
+    console.error('ReccoBeats audio features lookup failed:', fallbackError)
+    return trackIds.map((id) => ({
+      id,
+      tempo: null,
+      energy: null,
+      danceability: null,
+      valence: null,
+      acousticness: null,
+      instrumentalness: null,
+      loudness: null,
+      speechiness: null,
+      liveness: null,
+      key: null,
+      mode: null,
+      time_signature: null,
+      _reccoBeatsId: null,
+      _reccoBeats: null,
+    }))
   }
 }
 

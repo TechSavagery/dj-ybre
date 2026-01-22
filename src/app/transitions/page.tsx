@@ -584,6 +584,7 @@ function TrackSearchInput({
 
 export default function TransitionsPage() {
   const [selectedTracks, setSelectedTracks] = useState<SelectedTrack[]>([])
+  const [trackSlots, setTrackSlots] = useState(2)
   const [transitionTypes, setTransitionTypes] = useState<string[]>([])
   const [name, setName] = useState('')
   const [notes, setNotes] = useState('')
@@ -790,6 +791,7 @@ export default function TransitionsPage() {
       setSubmitStatus('success')
       // Reset form
       setSelectedTracks([])
+      setTrackSlots(2)
       setTransitionTypes([])
       setName('')
       setNotes('')
@@ -856,7 +858,7 @@ export default function TransitionsPage() {
               </h2>
               <div className="isolate mt-6 -space-y-px rounded-2xl bg-white/50">
                 {/* Track Selection */}
-                {[1, 2, 3, 4].map((position) => (
+                {Array.from({ length: trackSlots }, (_, i) => i + 1).map((position) => (
                   <TrackSearchInput
                     key={position}
                     label={`Track ${position}${position === 1 ? ' (First Track)' : ''}`}
@@ -868,6 +870,20 @@ export default function TransitionsPage() {
                     detailsLoadingByTrackId={detailsLoadingByTrackId}
                   />
                 ))}
+
+                <div className="px-6 py-4 border border-neutral-300 bg-transparent group-first:rounded-t-2xl group-last:rounded-b-2xl">
+                  <Button
+                    type="button"
+                    onClick={() => setTrackSlots((prev) => Math.min(4, prev + 1))}
+                    disabled={trackSlots >= 4}
+                    className="w-full justify-center"
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <PlusIcon className="w-5 h-5" aria-hidden="true" />
+                      {trackSlots >= 4 ? 'Maximum 4 tracks' : 'Add track'}
+                    </span>
+                  </Button>
+                </div>
 
                 <MultiSelectPopover
                   label="Transition Types"
