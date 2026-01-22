@@ -80,9 +80,9 @@ export async function POST(request: NextRequest) {
     const trackIds = replacementTracks.map(t => t.id)
     const audioFeatures = await getAudioFeatures(trackIds, accessToken)
     const featuresMap = new Map(
-      audioFeatures
-        .filter((f): f is NonNullable<typeof f> => f !== null)
-        .map(f => [f.id, f])
+      (audioFeatures || [])
+        .filter((f: any): f is NonNullable<typeof f> => f !== null && f.id)
+        .map((f: any) => [f.id, f])
     )
 
     // Calculate current duration
