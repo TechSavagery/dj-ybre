@@ -14,6 +14,35 @@ import { unifiedConditional } from 'unified-conditional'
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   pageExtensions: ['js', 'jsx', 'ts', 'tsx', 'mdx'],
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'i.scdn.co',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.scdn.co',
+      },
+      {
+        protocol: 'https',
+        hostname: 'm.media-amazon.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.spotifycdn.com',
+      },
+    ],
+  },
+  webpack: (config, { isServer, webpack }) => {
+    // Ignore README.md files to prevent webpack from trying to parse them as modules
+    config.plugins.push(
+      new webpack.IgnorePlugin({
+        resourceRegExp: /README\.md$/,
+      })
+    )
+    return config
+  },
 }
 
 function remarkMDXLayout(source, metaName) {

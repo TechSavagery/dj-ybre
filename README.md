@@ -18,6 +18,14 @@ npm run dev
 
 Finally, open [http://localhost:3000](http://localhost:3000) in your browser to view the website.
 
+## Audio features (BPM, danceability, energy)
+
+Spotify’s Web API audio endpoints (`/v1/audio-features`, `/v1/audio-analysis`) may return **403** for many apps due to Spotify restrictions/deprecation.
+
+This project supports a fallback provider:
+
+- **ReccoBeats**: per their docs, **no API key is required**. If you do have a token, you can optionally set `RECCOBEATS_API_KEY`, but it is not needed for basic lookups.
+
 ## Customizing
 
 You can start editing this template by modifying the files in the `/src` folder. The site will auto-update as you edit these files.
