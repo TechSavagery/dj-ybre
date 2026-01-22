@@ -32,18 +32,18 @@ export async function GET(request: NextRequest) {
     const results = await searchSpotify(query, accessToken, limit)
     
     return NextResponse.json({
-      tracks: results.tracks.map(track => ({
+      tracks: results.tracks.map((track: any) => ({
         id: track.id,
         name: track.name,
         artist: track.artists[0]?.name || 'Unknown',
-        artists: track.artists.map(a => ({ id: a.id, name: a.name })),
+        artists: track.artists.map((a: any) => ({ id: a.id, name: a.name })),
         album: track.album.name,
         albumImage: track.album.images[0]?.url,
         previewUrl: track.preview_url,
         externalUrl: track.external_urls.spotify,
         duration: track.duration_ms,
       })),
-      artists: results.artists.map(artist => ({
+      artists: results.artists.map((artist: any) => ({
         id: artist.id,
         name: artist.name,
         image: artist.images[0]?.url,
