@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 import { HeartIcon, XMarkIcon } from '@heroicons/react/24/outline'
 
 interface Track {
@@ -133,10 +134,13 @@ export function InspirationSearch({
                 onClick={() => addTrack(track)}
               >
                 {track.albumImage && (
-                  <img
+                  <Image
                     src={track.albumImage}
                     alt={track.album}
+                    width={48}
+                    height={48}
                     className="w-12 h-12 rounded"
+                    unoptimized
                   />
                 )}
                 <div className="flex-1 min-w-0">
@@ -173,10 +177,13 @@ export function InspirationSearch({
                 onClick={() => addArtist(artist)}
               >
                 {artist.image && (
-                  <img
+                  <Image
                     src={artist.image}
                     alt={artist.name}
+                    width={48}
+                    height={48}
                     className="w-12 h-12 rounded-full"
+                    unoptimized
                   />
                 )}
                 <div className="flex-1 min-w-0">

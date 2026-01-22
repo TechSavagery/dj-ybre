@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useId } from 'react'
 import { motion } from 'framer-motion'
 import { ChevronDownIcon, MagnifyingGlassIcon } from '@heroicons/react/20/solid'
+import Image from 'next/image'
 import { Container } from '@/components/Container'
 import { FadeIn, FadeInStagger } from '@/components/FadeIn'
 import { PageIntro } from '@/components/PageIntro'
@@ -193,10 +194,13 @@ function TransitionCard({ transition }: { transition: Transition }) {
               {transition.tracks.map((track, idx) => (
                 <div key={track.id} className="flex items-center gap-3">
                   {track.albumImage && (
-                    <img
+                    <Image
                       src={track.albumImage}
                       alt={track.album || track.name}
+                      width={40}
+                      height={40}
                       className="w-10 h-10 rounded object-cover flex-shrink-0"
+                      unoptimized
                     />
                   )}
                   <div className="flex-1 min-w-0">

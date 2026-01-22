@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import Image from 'next/image'
 import { Container } from '@/components/Container'
 import { FadeIn } from '@/components/FadeIn'
 import { PageIntro } from '@/components/PageIntro'
@@ -75,10 +76,13 @@ export default async function TransitionDetailPage({
                   {transition.tracks.map((track: any, idx: number) => (
                     <div key={track.id} className="flex items-start gap-4">
                       {track.albumImage && (
-                        <img
+                        <Image
                           src={track.albumImage}
                           alt={track.album || track.name}
+                          width={80}
+                          height={80}
                           className="w-20 h-20 rounded object-cover flex-shrink-0"
+                          unoptimized
                         />
                       )}
                       <div className="flex-1">

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useId } from 'react'
 import { motion } from 'framer-motion'
 import { ChevronDownIcon, XMarkIcon, PlusIcon } from '@heroicons/react/20/solid'
+import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/Button'
 import { FadeIn } from '@/components/FadeIn'
@@ -359,10 +360,13 @@ function TrackSearchInput({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {selectedTrack.albumImage && (
-                <img
+                <Image
                   src={selectedTrack.albumImage}
                   alt={selectedTrack.album}
+                  width={48}
+                  height={48}
                   className="w-12 h-12 rounded object-cover"
+                  unoptimized
                 />
               )}
               <div>
@@ -423,10 +427,13 @@ function TrackSearchInput({
                 >
                   <div className="flex items-center gap-3">
                     {track.albumImage && (
-                      <img
+                      <Image
                         src={track.albumImage}
                         alt={track.album}
+                        width={40}
+                        height={40}
                         className="w-10 h-10 rounded object-cover"
+                        unoptimized
                       />
                     )}
                     <div className="flex-1 min-w-0">
