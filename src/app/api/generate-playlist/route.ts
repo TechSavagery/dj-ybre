@@ -163,8 +163,8 @@ export async function POST(request: NextRequest) {
                   danceability: features.danceability,
                   acousticness: features.acousticness,
                 }
-              : null,
-            genres: genres.length > 0 ? genres : null,
+              : undefined,
+            genres: genres.length > 0 ? genres : undefined,
           },
         })
       })
