@@ -136,7 +136,7 @@ export function InspirationSearch({
                 {track.albumImage && (
                   <Image
                     src={track.albumImage}
-                    alt={track.album}
+                    alt={track.album || track.name}
                     width={48}
                     height={48}
                     className="w-12 h-12 rounded"
