@@ -116,11 +116,33 @@ export async function POST(request: NextRequest) {
     // Get audio features for tracks
     const trackIds = Array.from(uniqueTracks.keys())
     const audioFeatures = await getAudioFeatures(trackIds, accessToken)
-    const featuresMap = new Map(
-      (audioFeatures || [])
-        .filter((f: any): f is NonNullable<typeof f> => f !== null && f.id)
-        .map((f: any) => [f.id, f])
-    )
+    
+    // Log the response to debug
+    console.log('[generate-playlist] Track IDs requested:', trackIds.slice(0, 5), '... (total:', trackIds.length, ')')
+    console.log('[generate-playlist] Audio features response type:', typeof audioFeatures, Array.isArray(audioFeatures) ? `(array length: ${audioFeatures?.length})` : '')
+    if (audioFeatures && Array.isArray(audioFeatures) && audioFeatures.length > 0) {
+      const firstNonNull = audioFeatures.find((f: any) => f !== null)
+      if (firstNonNull) {
+        console.log('[generate-playlist] First non-null audio feature sample:', JSON.stringify(firstNonNull, null, 2))
+      }
+    }
+    
+    // Spotify returns audio_features as an array matching the trackIds order
+    // Each element can be null if features aren't available, or an object with id, tempo, energy, etc.
+    const featuresMap = new Map<string, any>()
+    if (audioFeatures && Array.isArray(audioFeatures)) {
+      audioFeatures.forEach((features: any, index: number) => {
+        if (features && typeof features === 'object' && features.id) {
+          // Use the id from the features object
+          featuresMap.set(features.id, features)
+        } else if (features && typeof features === 'object' && trackIds[index]) {
+          // Fallback: use index if id is missing
+          featuresMap.set(trackIds[index], features)
+        }
+      })
+    }
+    
+    console.log('[generate-playlist] Features map size:', featuresMap.size, 'out of', trackIds.length, 'tracks')
 
     // Calculate total duration and filter to target
     let totalDuration = 0

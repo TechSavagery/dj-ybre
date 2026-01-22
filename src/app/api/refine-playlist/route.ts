@@ -79,11 +79,30 @@ export async function POST(request: NextRequest) {
     // Get audio features for new tracks
     const trackIds = replacementTracks.map(t => t.id)
     const audioFeatures = await getAudioFeatures(trackIds, accessToken)
-    const featuresMap = new Map(
-      (audioFeatures || [])
-        .filter((f: any): f is NonNullable<typeof f> => f !== null && f.id)
-        .map((f: any) => [f.id, f])
-    )
+    
+    // Log the response to debug
+    console.log('[refine-playlist] Track IDs requested:', trackIds)
+    console.log('[refine-playlist] Audio features response type:', typeof audioFeatures, Array.isArray(audioFeatures) ? `(array length: ${audioFeatures?.length})` : '')
+    if (audioFeatures && Array.isArray(audioFeatures) && audioFeatures.length > 0) {
+      console.log('[refine-playlist] First audio feature sample:', JSON.stringify(audioFeatures[0], null, 2))
+    }
+    
+    // Spotify returns audio_features as an array matching the trackIds order
+    // Each element can be null if features aren't available, or an object with id, tempo, energy, etc.
+    const featuresMap = new Map<string, any>()
+    if (audioFeatures && Array.isArray(audioFeatures)) {
+      audioFeatures.forEach((features: any, index: number) => {
+        if (features && typeof features === 'object' && features.id) {
+          // Use the id from the features object
+          featuresMap.set(features.id, features)
+        } else if (features && typeof features === 'object' && trackIds[index]) {
+          // Fallback: use index if id is missing
+          featuresMap.set(trackIds[index], features)
+        }
+      })
+    }
+    
+    console.log('[refine-playlist] Features map size:', featuresMap.size, 'keys:', Array.from(featuresMap.keys()))
 
     // Calculate current duration
     const activeTracks = session.tracks.filter(t => !t.isRemoved)
@@ -106,7 +125,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       preferences: analysis.preferences,
       suggestions: filteredReplacements.map(track => {
-        const features = featuresMap.get(track.id)
+        const features = featuresMap.get(track.id) as any
         return {
           spotifyId: track.id,
           name: track.name,
