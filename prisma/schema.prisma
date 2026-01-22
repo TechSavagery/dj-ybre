@@ -1,0 +1,160 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // Optional: Use DATABASE_URL_UNPOOLED for migrations (direct connection, not pooled)
+  // This can improve migration performance. If not set, DATABASE_URL will be used.
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+model PlaylistSession {
+  id                String          @id @default(cuid())
+  eventType         String          // wedding, birthday, corporate, etc.
+  playlistDuration  Int             // Duration in minutes
+  graduationYear1   Int?
+  graduationYear2   Int?
+  hometown1         String?
+  hometown2         String?
+  college1          String?
+  college2          String?
+  lastConcert1      String?
+  lastConcert2      String?
+  lastConcert3      String?
+  eventDescription  String?         // What the playlist is for
+  inspirationTracks Json?           // Array of Spotify track IDs
+  inspirationArtists Json?          // Array of Spotify artist IDs
+  targetDuration    Int             // Target duration in seconds
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  tracks            PlaylistTrack[]
+  interactions      UserInteraction[]
+  
+  @@map("playlist_sessions")
+}
+
+model PlaylistTrack {
+  id              String            @id @default(cuid())
+  sessionId       String
+  spotifyId       String            @unique
+  name            String
+  artist          String
+  album           String?
+  duration        Int               // Duration in milliseconds
+  previewUrl      String?
+  imageUrl        String?
+  externalUrl     String?
+  order           Int?              // Order in playlist (null if not ordered yet)
+  isHearted       Boolean           @default(false)
+  isRemoved       Boolean           @default(false)
+  audioFeatures   Json?             // BPM, energy, valence, etc.
+  genres          Json?             // Array of genres
+  createdAt       DateTime          @default(now())
+  session         PlaylistSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  @@index([sessionId])
+  @@index([spotifyId])
+  @@map("playlist_tracks")
+}
+
+model UserInteraction {
+  id          String          @id @default(cuid())
+  sessionId   String
+  trackId     String
+  action      String          // "heart" or "remove"
+  createdAt   DateTime        @default(now())
+  session     PlaylistSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  @@index([sessionId])
+  @@index([trackId])
+  @@map("user_interactions")
+}
+
+// DJ Transition Catalog Models
+model Transition {
+  id            String            @id @default(cuid())
+  name          String            // e.g., "Song A into Song B" (editable)
+  type          String[]          @default([]) // Array of transition types: beat_match, word_play, key_change, drop_swap, mashup, etc.
+  notes         String?           // Tutorial/notes about the transition
+  stemsNotes    String?           // Notes about stems used (vocals, instrumental, etc.)
+  tags          String[]          @default([]) // Array of tags for searching/sorting
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  tracks        TransitionTrack[]
+  points        TransitionPoint[]
+  
+  @@index([createdAt])
+  @@map("transitions")
+}
+
+model TransitionTrack {
+  id              String            @id @default(cuid())
+  transitionId    String
+  spotifyId       String            // Spotify track ID
+  position        Int               // 1, 2, 3, or 4 (channel position)
+  fromTrackId     String?           // Which track this transitions from (nullable for first track)
+  
+  // Track metadata from Spotify
+  name            String
+  artist          String
+  artists         Json?             // Array of all artists
+  album           String?
+  albumImage      String?
+  duration        Int               // Duration in milliseconds
+  previewUrl      String?
+  externalUrl     String?
+  
+  // Audio features
+  bpm             Float?            // Beats per minute
+  key             Int?              // Key (0-11, where 0 = C, 1 = C#, etc.)
+  mode            Int?              // 0 = minor, 1 = major
+  timeSignature   Int?              // Time signature (typically 4)
+  energy          Float?            // 0.0 to 1.0
+  danceability    Float?            // 0.0 to 1.0
+  valence         Float?            // 0.0 to 1.0
+  audioFeatures   Json?             // Full audio features object from Spotify
+  
+  // Genre and other metadata
+  genres          String[]          @default([]) // Array of genres
+  releaseDate     String?           // Release date
+  popularity      Int?              // Spotify popularity score (0-100)
+  
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  transition      Transition        @relation(fields: [transitionId], references: [id], onDelete: Cascade)
+  fromTrack       TransitionTrack?  @relation("TrackTransition", fields: [fromTrackId], references: [id], onDelete: SetNull)
+  toTracks        TransitionTrack[] @relation("TrackTransition")
+  points          TransitionPoint[]
+  
+  @@index([transitionId])
+  @@index([spotifyId])
+  @@index([position])
+  @@map("transition_tracks")
+}
+
+model TransitionPoint {
+  id            String            @id @default(cuid())
+  transitionId  String
+  trackId       String            // Which track this point belongs to
+  timestamp     Float             // Timestamp in seconds
+  description   String?           // Description of the transition point
+  pointType     String?           // chorus, verse, drop, intro, outro, bridge, etc.
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  
+  transition    Transition        @relation(fields: [transitionId], references: [id], onDelete: Cascade)
+  track         TransitionTrack   @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  
+  @@index([transitionId])
+  @@index([trackId])
+  @@map("transition_points")
+}

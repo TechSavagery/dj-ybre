@@ -10,10 +10,20 @@ import { remarkRehypeWrap } from 'remark-rehype-wrap'
 import remarkUnwrapImages from 'remark-unwrap-images'
 import shiki from 'shiki'
 import { unifiedConditional } from 'unified-conditional'
+import webpack from 'webpack'
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   pageExtensions: ['js', 'jsx', 'ts', 'tsx', 'mdx'],
+  webpack: (config, { isServer }) => {
+    // Ignore README.md files to prevent webpack from trying to parse them as modules
+    config.plugins.push(
+      new webpack.IgnorePlugin({
+        resourceRegExp: /README\.md$/,
+      })
+    )
+    return config
+  },
 }
 
 function remarkMDXLayout(source, metaName) {
