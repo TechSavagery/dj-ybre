@@ -14,6 +14,7 @@ interface RequestList {
   eventType: string
   eventDate: string
   eventTime?: string | null
+  eventEndTime?: string | null
   publicUrl: string
   publicDescription?: string | null
 }
@@ -37,6 +38,7 @@ export default function RequestsManageListPage() {
   const [requests, setRequests] = useState<SongRequestItem[]>([])
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
+  const [eventEndTimeDraft, setEventEndTimeDraft] = useState('')
   const [publicDescriptionDraft, setPublicDescriptionDraft] = useState('')
   const [publicDescriptionStatus, setPublicDescriptionStatus] = useState<
     'idle' | 'saving' | 'success' | 'error'
@@ -55,6 +57,7 @@ export default function RequestsManageListPage() {
       const data = await res.json()
       setList(data.list || null)
       setRequests(Array.isArray(data.requests) ? data.requests : [])
+      setEventEndTimeDraft(data?.list?.eventEndTime || '')
       setPublicDescriptionDraft(data?.list?.publicDescription || '')
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Unable to load request list')
@@ -113,7 +116,10 @@ export default function RequestsManageListPage() {
       const res = await fetch(`/api/requests/${listId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ publicDescription: publicDescriptionDraft || null }),
+        body: JSON.stringify({
+          publicDescription: publicDescriptionDraft || null,
+          eventEndTime: eventEndTimeDraft || null,
+        }),
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
@@ -121,6 +127,7 @@ export default function RequestsManageListPage() {
       }
       const data = await res.json()
       setList(data.list || null)
+      setEventEndTimeDraft(data?.list?.eventEndTime || '')
       setPublicDescriptionDraft(data?.list?.publicDescription || '')
       setPublicDescriptionStatus('success')
       window.setTimeout(() => setPublicDescriptionStatus('idle'), 1200)
@@ -179,6 +186,20 @@ export default function RequestsManageListPage() {
               This replaces the helper text shown above the public request form.
             </p>
             <div className="mt-5 space-y-3">
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-neutral-950">
+                  End time (optional)
+                </label>
+                <input
+                  type="time"
+                  value={eventEndTimeDraft}
+                  onChange={(e) => setEventEndTimeDraft(e.target.value)}
+                  className="w-full rounded-xl border border-neutral-300 bg-transparent px-4 py-3 text-base/6 text-neutral-950 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5"
+                />
+                <p className="text-xs text-neutral-500">
+                  Used to hide the “Request a song” link after the event is finished.
+                </p>
+              </div>
               <textarea
                 value={publicDescriptionDraft}
                 onChange={(e) => setPublicDescriptionDraft(e.target.value)}

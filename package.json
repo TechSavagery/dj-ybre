@@ -48,6 +48,7 @@
     "react-calendly": "^4.3.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.66.1",
+    "react-qr-code": "^2.0.18",
     "recma-import-images": "0.0.3",
     "remark-gfm": "^4.0.0",
     "remark-rehype-wrap": "0.0.3",

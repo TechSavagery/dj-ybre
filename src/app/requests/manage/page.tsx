@@ -13,6 +13,7 @@ interface RequestList {
   eventType: string
   eventDate: string
   eventTime?: string | null
+  eventEndTime?: string | null
   createdAt: string
   requestsCount: number
   publicUrl: string
@@ -75,6 +76,7 @@ export default function RequestsManagePage() {
   const [eventType, setEventType] = useState('')
   const [eventDate, setEventDate] = useState('')
   const [eventTime, setEventTime] = useState('')
+  const [eventEndTime, setEventEndTime] = useState('')
   const [publicDescription, setPublicDescription] = useState('')
   const [status, setStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle')
   const [error, setError] = useState('')
@@ -132,6 +134,7 @@ export default function RequestsManagePage() {
           eventType,
           eventDate,
           eventTime: eventTime || null,
+          eventEndTime: eventEndTime || null,
           publicDescription: publicDescription || null,
         }),
       })
@@ -149,6 +152,7 @@ export default function RequestsManagePage() {
       setEventType('')
       setEventDate('')
       setEventTime('')
+      setEventEndTime('')
       setPublicDescription('')
       fetchLists()
     } catch (err) {
@@ -220,7 +224,7 @@ export default function RequestsManagePage() {
                     <option value={type} key={type} />
                   ))}
                 </datalist>
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
                   <TextInput
                     label="Event date"
                     type="date"
@@ -229,10 +233,17 @@ export default function RequestsManagePage() {
                     required
                   />
                   <TextInput
-                    label="Event time"
+                    label="Start time"
                     type="time"
                     value={eventTime}
                     onChange={setEventTime}
+                    placeholder="Optional"
+                  />
+                  <TextInput
+                    label="End time"
+                    type="time"
+                    value={eventEndTime}
+                    onChange={setEventEndTime}
                     placeholder="Optional"
                   />
                 </div>
@@ -297,6 +308,7 @@ export default function RequestsManagePage() {
                     <p className="text-xs text-neutral-500">
                       {list.eventType} · {list.eventDate}
                       {list.eventTime ? ` · ${list.eventTime}` : ''}
+                      {list.eventEndTime ? ` - ${list.eventEndTime}` : ''}
                     </p>
                     <p className="mt-2 text-xs text-neutral-500">
                       {list.requestsCount} request{list.requestsCount === 1 ? '' : 's'}

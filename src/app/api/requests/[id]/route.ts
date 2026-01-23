@@ -68,6 +68,7 @@ export async function GET(
         eventType: list.eventType,
         eventDate: list.eventDate,
         eventTime: list.eventTime,
+        eventEndTime: list.eventEndTime ?? null,
         publicDescription: list.publicDescription ?? null,
         createdAt: list.createdAt,
         publicUrl: `/requests/${list.id}`,
@@ -146,10 +147,12 @@ export async function PATCH(
     const publicDescriptionRaw =
       typeof body?.publicDescription === 'string' ? body.publicDescription.trim() : ''
     const publicDescription = publicDescriptionRaw.length > 0 ? publicDescriptionRaw : null
+    const eventEndTime =
+      typeof body?.eventEndTime === 'string' ? body.eventEndTime.trim() : null
 
     const updated = await prisma.songRequestList.update({
       where: { id: params.id },
-      data: { publicDescription },
+      data: { publicDescription, eventEndTime: eventEndTime || null },
     })
 
     return NextResponse.json({
@@ -159,6 +162,7 @@ export async function PATCH(
         eventType: updated.eventType,
         eventDate: updated.eventDate,
         eventTime: updated.eventTime,
+        eventEndTime: updated.eventEndTime ?? null,
         publicDescription: updated.publicDescription ?? null,
         createdAt: updated.createdAt,
         publicUrl: `/requests/${updated.id}`,

@@ -170,6 +170,7 @@ model SongRequestList {
   eventType  String             // school dance, wedding, bar/club, etc.
   eventDate  String             // YYYY-MM-DD (local date only)
   eventTime  String?            // HH:mm (local time)
+  eventEndTime String?          // HH:mm (local time)
   publicDescription String?     // Public-facing helper text shown on the request page
   spotifyPlaylistId  String?
   spotifyPlaylistUrl String?

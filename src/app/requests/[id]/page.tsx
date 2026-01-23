@@ -8,6 +8,7 @@ import { FadeIn } from '@/components/FadeIn'
 import { Border } from '@/components/Border'
 import { Button } from '@/components/Button'
 import { SpotifyPlayOverlayImage } from '@/components/SpotifyPlayOverlayImage'
+import QRCode from 'react-qr-code'
 
 interface RequestList {
   id: string
@@ -351,6 +352,12 @@ export default function RequestListPage() {
     return origin ? `${origin}${list.publicUrl}` : list.publicUrl
   }, [list?.publicUrl, origin])
 
+  const qrValue = useMemo(() => {
+    if (!list?.publicUrl) return ''
+    if (list.publicUrl.startsWith('http')) return list.publicUrl
+    return origin ? `${origin}${list.publicUrl}` : ''
+  }, [list?.publicUrl, origin])
+
   const handleCopyLink = async () => {
     if (!shareUrl) return
     try {
@@ -658,6 +665,16 @@ export default function RequestListPage() {
                   <Button onClick={handleCopyLink} className="w-full justify-center">
                     Copy link
                   </Button>
+                  {qrValue ? (
+                    <div className="pt-2">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="rounded-xl bg-white p-3 shadow-sm ring-1 ring-neutral-200">
+                          <QRCode value={qrValue} size={180} />
+                        </div>
+                        <p className="text-xs text-neutral-500">Scan to open this request list</p>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </Border>
             </div>
