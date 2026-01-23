@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { HeartIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { SpotifyPlayOverlayImage } from '@/components/SpotifyPlayOverlayImage'
 
 interface Track {
   id: string
@@ -11,6 +12,7 @@ interface Track {
   album?: string
   albumImage?: string
   previewUrl?: string
+  externalUrl?: string
 }
 
 interface Artist {
@@ -134,13 +136,14 @@ export function InspirationSearch({
                 onClick={() => addTrack(track)}
               >
                 {track.albumImage && (
-                  <Image
+                  <SpotifyPlayOverlayImage
                     src={track.albumImage}
                     alt={track.album || track.name}
-                    width={48}
-                    height={48}
+                    href={track.externalUrl}
+                    mode="popup"
+                    spotifyUri={`spotify:track:${track.id}`}
+                    size={48}
                     className="w-12 h-12 rounded"
-                    unoptimized
                   />
                 )}
                 <div className="flex-1 min-w-0">

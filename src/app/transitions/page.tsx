@@ -3,14 +3,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useId } from 'react'
 import { motion } from 'framer-motion'
-import { ChevronDownIcon, XMarkIcon, PlusIcon, PlayIcon, PauseIcon } from '@heroicons/react/20/solid'
-import Image from 'next/image'
+import { ChevronDownIcon, XMarkIcon, PlusIcon } from '@heroicons/react/20/solid'
 import Link from 'next/link'
 import { Button } from '@/components/Button'
 import { FadeIn } from '@/components/FadeIn'
 import { Container } from '@/components/Container'
 import { PageIntro } from '@/components/PageIntro'
 import { TRANSITION_TYPES } from '@/lib/transitions'
+import { SpotifyPlayOverlayImage } from '@/components/SpotifyPlayOverlayImage'
 
 const KEY_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 const MODE_NAMES = ['Minor', 'Major']
@@ -330,16 +330,12 @@ function TrackSearchInput({
   onTrackSelect,
   selectedTracks,
   position,
-  playingPreviewTrackId,
-  onTogglePreview,
   detailsLoadingByTrackId,
 }: {
   label: string
   onTrackSelect: (track: Track, position: number) => void
   selectedTracks: SelectedTrack[]
   position: number
-  playingPreviewTrackId: string | null
-  onTogglePreview: (trackId: string, previewUrl: string) => void
   detailsLoadingByTrackId: Record<string, boolean>
 }) {
   const id = useId()
@@ -360,7 +356,7 @@ function TrackSearchInput({
     const timeoutId = setTimeout(async () => {
       setIsSearching(true)
       try {
-        const response = await fetch(`/api/spotify/search?q=${encodeURIComponent(query)}&limit=5`)
+        const response = await fetch(`/api/spotify/search?q=${encodeURIComponent(query)}&limit=10`)
         if (response.ok) {
           const data = await response.json()
           setResults(data.tracks || [])
@@ -393,9 +389,6 @@ function TrackSearchInput({
   }, [isOpen])
 
   const selectedTrack = selectedTracks.find((t) => t.position === position)
-  const isSelectedTrackPlaying = Boolean(
-    selectedTrack?.id && playingPreviewTrackId && selectedTrack.id === playingPreviewTrackId
-  )
   const isDetailsLoading = Boolean(selectedTrack?.id && detailsLoadingByTrackId[selectedTrack.id])
 
   const supportingArtists =
@@ -432,47 +425,15 @@ function TrackSearchInput({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {selectedTrack.albumImage && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (selectedTrack.previewUrl) {
-                      onTogglePreview(selectedTrack.id, selectedTrack.previewUrl)
-                    }
-                  }}
-                  disabled={!selectedTrack.previewUrl}
-                  aria-label={
-                    selectedTrack.previewUrl
-                      ? isSelectedTrackPlaying
-                        ? `Pause preview for ${selectedTrack.name}`
-                        : `Play preview for ${selectedTrack.name}`
-                      : `No preview available for ${selectedTrack.name}`
-                  }
-                  title={selectedTrack.previewUrl ? 'Play preview' : 'No preview available'}
-                  className={[
-                    'relative w-12 h-12 rounded overflow-hidden flex-shrink-0',
-                    selectedTrack.previewUrl
-                      ? 'cursor-pointer focus:outline-none focus:ring-2 focus:ring-neutral-950/20 hover:ring-2 hover:ring-neutral-950/10'
-                      : 'cursor-not-allowed opacity-70',
-                  ].join(' ')}
-                >
-                  <Image
-                    src={selectedTrack.albumImage}
-                    alt={selectedTrack.album}
-                    width={48}
-                    height={48}
-                    className="w-12 h-12 object-cover"
-                    unoptimized
-                  />
-                  {selectedTrack.previewUrl && (
-                    <span className="absolute inset-0 grid place-items-center bg-neutral-950/35 opacity-0 transition-opacity group-hover:opacity-100">
-                      {isSelectedTrackPlaying ? (
-                        <PauseIcon className="w-6 h-6 text-white" />
-                      ) : (
-                        <PlayIcon className="w-6 h-6 text-white" />
-                      )}
-                    </span>
-                  )}
-                </button>
+                <SpotifyPlayOverlayImage
+                  src={selectedTrack.albumImage}
+                  alt={selectedTrack.album}
+                  href={selectedTrack.externalUrl}
+                  mode="popup"
+                  spotifyUri={`spotify:track:${selectedTrack.id}`}
+                  size={48}
+                  className="w-12 h-12 rounded flex-shrink-0"
+                />
               )}
               <div>
                 <div className="font-semibold text-neutral-950">{selectedTrack.name}</div>
@@ -558,13 +519,14 @@ function TrackSearchInput({
                 >
                   <div className="flex items-center gap-3">
                     {track.albumImage && (
-                      <Image
+                      <SpotifyPlayOverlayImage
                         src={track.albumImage}
                         alt={track.album}
-                        width={40}
-                        height={40}
-                        className="w-10 h-10 rounded object-cover"
-                        unoptimized
+                        href={track.externalUrl}
+                        mode="popup"
+                        spotifyUri={`spotify:track:${track.id}`}
+                        size={40}
+                        className="w-10 h-10 rounded"
                       />
                     )}
                     <div className="flex-1 min-w-0">
@@ -593,21 +555,7 @@ export default function TransitionsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState('')
-  const [playingPreviewTrackId, setPlayingPreviewTrackId] = useState<string | null>(null)
-  const previewAudioRef = useRef<HTMLAudioElement | null>(null)
   const [detailsLoadingByTrackId, setDetailsLoadingByTrackId] = useState<Record<string, boolean>>({})
-
-  const stopPreview = useCallback(() => {
-    const audio = previewAudioRef.current
-    if (!audio) return
-    try {
-      audio.pause()
-      audio.removeAttribute('src')
-      audio.load()
-    } finally {
-      setPlayingPreviewTrackId(null)
-    }
-  }, [])
 
   const enrichTrackDetails = useCallback(async (trackId: string) => {
     setDetailsLoadingByTrackId((prev) => ({ ...prev, [trackId]: true }))
@@ -640,63 +588,6 @@ export default function TransitionsPage() {
       setDetailsLoadingByTrackId((prev) => ({ ...prev, [trackId]: false }))
     }
   }, [])
-
-  const togglePreview = useCallback(
-    async (trackId: string, previewUrl: string) => {
-      const audio = previewAudioRef.current
-      if (!audio) return
-
-      // Same track: toggle play/pause
-      if (playingPreviewTrackId === trackId) {
-        if (audio.paused) {
-          try {
-            await audio.play()
-          } catch (err) {
-            console.error('Failed to play preview audio:', err)
-            stopPreview()
-          }
-        } else {
-          audio.pause()
-          setPlayingPreviewTrackId(null)
-        }
-        return
-      }
-
-      // New track: stop existing, load new src, play
-      try {
-        audio.pause()
-        audio.src = previewUrl
-        audio.currentTime = 0
-        audio.load()
-        await audio.play()
-        setPlayingPreviewTrackId(trackId)
-      } catch (err) {
-        console.error('Failed to play preview audio:', err)
-        stopPreview()
-      }
-    },
-    [playingPreviewTrackId, stopPreview]
-  )
-
-  useEffect(() => {
-    const audio = previewAudioRef.current
-    if (!audio) return
-
-    const handleEnded = () => {
-      setPlayingPreviewTrackId(null)
-    }
-
-    audio.addEventListener('ended', handleEnded)
-    return () => {
-      audio.removeEventListener('ended', handleEnded)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!playingPreviewTrackId) return
-    const stillSelected = selectedTracks.some((t) => t.id === playingPreviewTrackId)
-    if (!stillSelected) stopPreview()
-  }, [playingPreviewTrackId, selectedTracks, stopPreview])
 
   const handleTrackSelect = useCallback((track: Track, position: number) => {
     if (!track.id) {
@@ -829,8 +720,6 @@ export default function TransitionsPage() {
 
       <Container className="mt-24 sm:mt-32 lg:mt-40">
         <FadeIn>
-          {/* Single shared audio element for track previews */}
-          <audio ref={previewAudioRef} preload="none" crossOrigin="anonymous" className="hidden" />
           {submitStatus === 'success' ? (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -865,8 +754,6 @@ export default function TransitionsPage() {
                     onTrackSelect={(track, pos) => handleTrackSelect(track, pos)}
                     selectedTracks={selectedTracks}
                     position={position}
-                    playingPreviewTrackId={playingPreviewTrackId}
-                    onTogglePreview={togglePreview}
                     detailsLoadingByTrackId={detailsLoadingByTrackId}
                   />
                 ))}

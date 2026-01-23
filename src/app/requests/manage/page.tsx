@@ -75,6 +75,7 @@ export default function RequestsManagePage() {
   const [eventType, setEventType] = useState('')
   const [eventDate, setEventDate] = useState('')
   const [eventTime, setEventTime] = useState('')
+  const [publicDescription, setPublicDescription] = useState('')
   const [status, setStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle')
   const [error, setError] = useState('')
   const [createdUrl, setCreatedUrl] = useState('')
@@ -131,6 +132,7 @@ export default function RequestsManagePage() {
           eventType,
           eventDate,
           eventTime: eventTime || null,
+          publicDescription: publicDescription || null,
         }),
       })
 
@@ -147,6 +149,7 @@ export default function RequestsManagePage() {
       setEventType('')
       setEventDate('')
       setEventTime('')
+      setPublicDescription('')
       fetchLists()
     } catch (err) {
       setStatus('error')
@@ -232,6 +235,22 @@ export default function RequestsManagePage() {
                     onChange={setEventTime}
                     placeholder="Optional"
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-neutral-950">
+                    Public description (optional)
+                  </label>
+                  <textarea
+                    value={publicDescription}
+                    onChange={(e) => setPublicDescription(e.target.value)}
+                    placeholder="Search Spotify, pick the track, then drop your name to submit."
+                    rows={3}
+                    className="w-full rounded-xl border border-neutral-300 bg-transparent px-4 py-3 text-base/6 text-neutral-950 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5"
+                  />
+                  <p className="text-xs text-neutral-500">
+                    This replaces the helper text shown on the public request page.
+                  </p>
                 </div>
 
                 {status === 'error' && error ? (

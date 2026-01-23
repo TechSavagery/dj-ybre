@@ -2,12 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'next/navigation'
-import Image from 'next/image'
 import { Container } from '@/components/Container'
 import { PageIntro } from '@/components/PageIntro'
 import { FadeIn } from '@/components/FadeIn'
 import { Border } from '@/components/Border'
 import { Button } from '@/components/Button'
+import { SpotifyPlayOverlayImage } from '@/components/SpotifyPlayOverlayImage'
 
 interface RequestList {
   id: string
@@ -16,6 +16,16 @@ interface RequestList {
   eventDate: string
   eventTime?: string | null
   publicUrl: string
+  publicDescription?: string | null
+}
+
+interface SessionInfo {
+  boostsUsed: number
+  boostsLimit: number
+  boostsRemaining: number
+  requestsUsed: number
+  requestsLimit: number
+  requestsRemaining: number
 }
 
 interface TrackResult {
@@ -89,16 +99,22 @@ export default function RequestListPage() {
   const [requests, setRequests] = useState<SongRequestItem[]>([])
   const [loading, setLoading] = useState(true)
   const [origin, setOrigin] = useState('')
+  const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<TrackResult[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [selectedTrack, setSelectedTrack] = useState<TrackResult | null>(null)
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
+  const [nameLocked, setNameLocked] = useState(false)
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle')
   const [message, setMessage] = useState('')
   const [voteMessage, setVoteMessage] = useState('')
   const searchRef = useRef<HTMLDivElement | null>(null)
+
+  const nameStorageKey = useMemo(() => (listId ? `song_request_name_${listId}` : ''), [listId])
+  const nameLockedKey = useMemo(() => (listId ? `song_request_name_locked_${listId}` : ''), [listId])
+  const hasName = Boolean(firstName.trim() && lastName.trim())
 
   const loadList = useCallback(async () => {
     if (!listId) return
@@ -112,6 +128,7 @@ export default function RequestListPage() {
       const data = await res.json()
       setList(data.list || null)
       setRequests(sortRequests(Array.isArray(data.requests) ? data.requests : []))
+      setSessionInfo(data.session || null)
     } catch (err) {
       console.error('Failed to load request list:', err)
       setMessage('Unable to load this request list.')
@@ -131,6 +148,23 @@ export default function RequestListPage() {
   }, [])
 
   useEffect(() => {
+    if (!listId) return
+    if (typeof window === 'undefined') return
+    try {
+      const stored = nameStorageKey ? window.localStorage.getItem(nameStorageKey) : null
+      const storedLocked = nameLockedKey ? window.localStorage.getItem(nameLockedKey) : null
+      if (stored) {
+        const parsed = JSON.parse(stored) as { firstName?: string; lastName?: string }
+        if (typeof parsed?.firstName === 'string') setFirstName(parsed.firstName)
+        if (typeof parsed?.lastName === 'string') setLastName(parsed.lastName)
+      }
+      setNameLocked(Boolean(storedLocked))
+    } catch {
+      // ignore
+    }
+  }, [listId, nameLockedKey, nameStorageKey])
+
+  useEffect(() => {
     if (!query || query.trim().length < 3) {
       setResults([])
       return
@@ -140,7 +174,7 @@ export default function RequestListPage() {
       setIsSearching(true)
       try {
         const nonExplicit = list?.eventType ? isSchoolDanceEventType(list.eventType) : false
-        const url = `/api/spotify/search?q=${encodeURIComponent(query)}&limit=5${
+        const url = `/api/spotify/search?q=${encodeURIComponent(query)}&limit=10${
           nonExplicit ? '&nonExplicit=1' : ''
         }`
         const res = await fetch(url)
@@ -177,6 +211,18 @@ export default function RequestListPage() {
     event.preventDefault()
     setMessage('')
     setSubmitStatus('saving')
+
+    if (sessionInfo && sessionInfo.requestsRemaining <= 0) {
+      setMessage('Only 3 requests per person.')
+      setSubmitStatus('error')
+      return
+    }
+
+    if (!firstName.trim() || !lastName.trim()) {
+      setMessage('Please enter your first and last name.')
+      setSubmitStatus('error')
+      return
+    }
 
     if (!selectedTrack) {
       setMessage('Pick a song before submitting.')
@@ -218,8 +264,27 @@ export default function RequestListPage() {
       setRequests((prev) => sortRequests([...prev, { ...newRequest, hasVoted: false }]))
       setSelectedTrack(null)
       setQuery('')
-      setFirstName('')
-      setLastName('')
+      if (typeof window !== 'undefined' && nameStorageKey) {
+        try {
+          window.localStorage.setItem(
+            nameStorageKey,
+            JSON.stringify({ firstName, lastName })
+          )
+          if (nameLockedKey) window.localStorage.setItem(nameLockedKey, '1')
+        } catch {
+          // ignore
+        }
+      }
+      setNameLocked(true)
+      setSessionInfo((prev) =>
+        prev
+          ? {
+              ...prev,
+              requestsUsed: prev.requestsUsed + 1,
+              requestsRemaining: Math.max(0, prev.requestsLimit - (prev.requestsUsed + 1)),
+            }
+          : prev
+      )
       setSubmitStatus('success')
       setMessage('Request received!')
     } catch (err) {
@@ -230,6 +295,10 @@ export default function RequestListPage() {
 
   const handleVote = async (requestId: string) => {
     setVoteMessage('')
+    if (sessionInfo && sessionInfo.boostsRemaining <= 0) {
+      setVoteMessage('Only 5 boosts per session.')
+      return
+    }
     try {
       const res = await fetch(`/api/requests/${listId}/songs/${requestId}/vote`, {
         method: 'POST',
@@ -241,6 +310,11 @@ export default function RequestListPage() {
             request.id === requestId ? { ...request, hasVoted: true } : request
           )
         )
+        return
+      }
+      if (res.status === 429) {
+        const data = await res.json().catch(() => ({}))
+        setVoteMessage(data.error || 'Only 5 boosts per session.')
         return
       }
       if (!res.ok) {
@@ -256,6 +330,15 @@ export default function RequestListPage() {
               : request
           )
         )
+      )
+      setSessionInfo((prev) =>
+        prev
+          ? {
+              ...prev,
+              boostsUsed: prev.boostsUsed + 1,
+              boostsRemaining: Math.max(0, prev.boostsLimit - (prev.boostsUsed + 1)),
+            }
+          : prev
       )
     } catch (err) {
       console.error('Failed to vote:', err)
@@ -303,15 +386,22 @@ export default function RequestListPage() {
         </p>
       </PageIntro>
 
-      <Container className="mt-24 sm:mt-32 lg:mt-40">
+      <Container className="mt-12 sm:mt-16 lg:mt-20">
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,_1fr)_360px]">
           <div className="space-y-8">
             <FadeIn>
               <Border className="p-8">
                 <h2 className="text-xl font-semibold text-neutral-950">Request a song</h2>
-                <p className="mt-2 text-sm text-neutral-600">
-                  Search Spotify, pick the track, then drop your name to submit.
+                <p className="mt-2 whitespace-pre-line text-sm text-neutral-600">
+                  {list.publicDescription ||
+                    'Search Spotify, pick the track, then drop your name to submit.'}
                 </p>
+                {sessionInfo ? (
+                  <p className="mt-2 text-xs text-neutral-500">
+                    {sessionInfo.requestsRemaining} request{sessionInfo.requestsRemaining === 1 ? '' : 's'} left ·{' '}
+                    {sessionInfo.boostsRemaining} boost{sessionInfo.boostsRemaining === 1 ? '' : 's'} left
+                  </p>
+                ) : null}
 
                 <form onSubmit={handleSubmit} className="mt-6 space-y-5">
                   <div ref={searchRef} className="relative space-y-2">
@@ -322,13 +412,13 @@ export default function RequestListPage() {
                       <div className="flex items-center justify-between rounded-xl border border-neutral-200 px-4 py-3">
                         <div className="flex items-center gap-3">
                           {selectedTrack.albumImage ? (
-                            <Image
+                            <SpotifyPlayOverlayImage
                               src={selectedTrack.albumImage}
                               alt={selectedTrack.album || selectedTrack.name}
-                              width={48}
-                              height={48}
-                              className="h-12 w-12 rounded object-cover"
-                              unoptimized
+                              href={selectedTrack.externalUrl}
+                              spotifyUri={`spotify:track:${selectedTrack.id}`}
+                              size={48}
+                              className="h-12 w-12 rounded"
                             />
                           ) : null}
                           <div>
@@ -372,13 +462,14 @@ export default function RequestListPage() {
                                 className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-neutral-50"
                               >
                                 {track.albumImage ? (
-                                  <Image
+                                  <SpotifyPlayOverlayImage
                                     src={track.albumImage}
                                     alt={track.album || track.name}
-                                    width={40}
-                                    height={40}
-                                    className="h-10 w-10 rounded object-cover"
-                                    unoptimized
+                                    href={track.externalUrl}
+                                    mode="popup"
+                                    spotifyUri={`spotify:track:${track.id}`}
+                                    size={40}
+                                    className="h-10 w-10 rounded"
                                   />
                                 ) : null}
                                 <div className="flex-1 min-w-0">
@@ -403,32 +494,58 @@ export default function RequestListPage() {
                     </div>
                   ) : null}
 
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-neutral-950">
-                        First name
-                      </label>
-                      <input
-                        type="text"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        required
-                        className="w-full rounded-xl border border-neutral-300 bg-transparent px-4 py-3 text-base/6 text-neutral-950 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5"
-                      />
+                  {nameLocked && hasName ? (
+                    <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
+                      Requesting as{' '}
+                      <span className="font-semibold text-neutral-950">
+                        {formatRequesterName(firstName, lastName)}
+                      </span>
+                      .{' '}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNameLocked(false)
+                          if (typeof window !== 'undefined' && nameLockedKey) {
+                            try {
+                              window.localStorage.removeItem(nameLockedKey)
+                            } catch {
+                              // ignore
+                            }
+                          }
+                        }}
+                        className="font-semibold text-neutral-700 underline hover:text-neutral-950"
+                      >
+                        Change name
+                      </button>
                     </div>
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-neutral-950">
-                        Last name
-                      </label>
-                      <input
-                        type="text"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                        required
-                        className="w-full rounded-xl border border-neutral-300 bg-transparent px-4 py-3 text-base/6 text-neutral-950 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5"
-                      />
+                  ) : (
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-neutral-950">
+                          First name
+                        </label>
+                        <input
+                          type="text"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          required
+                          className="w-full rounded-xl border border-neutral-300 bg-transparent px-4 py-3 text-base/6 text-neutral-950 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-neutral-950">
+                          Last name
+                        </label>
+                        <input
+                          type="text"
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          required
+                          className="w-full rounded-xl border border-neutral-300 bg-transparent px-4 py-3 text-base/6 text-neutral-950 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5"
+                        />
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {message ? (
                     <div
@@ -444,7 +561,12 @@ export default function RequestListPage() {
                     </div>
                   ) : null}
 
-                  <Button type="submit" disabled={submitStatus === 'saving'}>
+                  <Button
+                    type="submit"
+                    disabled={
+                      submitStatus === 'saving' || (sessionInfo ? sessionInfo.requestsRemaining <= 0 : false)
+                    }
+                  >
                     {submitStatus === 'saving' ? 'Submitting...' : 'Submit request'}
                   </Button>
                 </form>
@@ -457,7 +579,7 @@ export default function RequestListPage() {
                   Requested songs
                 </h2>
                 <p className="mt-2 text-sm text-neutral-600">
-                  Boost a song once per session to push it to the top.
+                  If you see your song here, hit the Boost button to push it to the top.
                 </p>
                 {voteMessage ? (
                   <p className="mt-3 text-sm text-neutral-600">{voteMessage}</p>
@@ -475,13 +597,13 @@ export default function RequestListPage() {
                       >
                         <div className="flex items-center gap-3">
                           {request.albumImage ? (
-                            <Image
+                            <SpotifyPlayOverlayImage
                               src={request.albumImage}
                               alt={request.album || request.name}
-                              width={52}
-                              height={52}
-                              className="h-14 w-14 rounded object-cover"
-                              unoptimized
+                              href={request.externalUrl}
+                              spotifyUri={`spotify:track:${request.spotifyId}`}
+                              size={56}
+                              className="h-14 w-14 rounded"
                             />
                           ) : null}
                           <div>
@@ -504,14 +626,14 @@ export default function RequestListPage() {
                           <button
                             type="button"
                             onClick={() => handleVote(request.id)}
-                            disabled={Boolean(request.hasVoted)}
+                            disabled={Boolean(request.hasVoted) || (sessionInfo ? sessionInfo.boostsRemaining <= 0 : false)}
                             className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                              request.hasVoted
+                              request.hasVoted || (sessionInfo ? sessionInfo.boostsRemaining <= 0 : false)
                                 ? 'cursor-not-allowed bg-neutral-100 text-neutral-400'
                                 : 'bg-neutral-950 text-white hover:bg-neutral-800'
                             }`}
                           >
-                            {request.hasVoted ? 'Boosted' : 'Boost'}
+                            {request.hasVoted ? 'Boosted' : sessionInfo && sessionInfo.boostsRemaining <= 0 ? 'No boosts left' : 'Boost'}
                           </button>
                         </div>
                       </div>

@@ -1,15 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
+import crypto from 'crypto'
 import { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { fetchTrackMetadata } from '@/lib/transitions'
 import { addTracksToSpotifyPlaylist, getUserAccessToken } from '@/lib/spotify'
 
 const prisma = db as any
+const SESSION_COOKIE = 'song_request_session'
+const REQUESTS_PER_SESSION_LIMIT = 3
 
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  let sessionKey = request.cookies.get(SESSION_COOKIE)?.value
+  let shouldSetCookie = false
+
+  if (!sessionKey) {
+    sessionKey = crypto.randomUUID()
+    shouldSetCookie = true
+  }
+
   try {
     const body = await request.json()
     const spotifyId = typeof body?.spotifyId === 'string' ? body.spotifyId.trim() : ''
@@ -34,6 +45,30 @@ export async function POST(
         { error: 'Request list not found' },
         { status: 404 }
       )
+    }
+
+    if (sessionKey) {
+      const existingCount = await prisma.songRequestTrack.count({
+        where: {
+          listId: params.id,
+          requesterSessionKey: sessionKey,
+        },
+      })
+      if (existingCount >= REQUESTS_PER_SESSION_LIMIT) {
+        const response = NextResponse.json(
+          { error: 'Only 3 requests per person.' },
+          { status: 429 }
+        )
+        if (shouldSetCookie && sessionKey) {
+          response.cookies.set(SESSION_COOKIE, sessionKey, {
+            httpOnly: true,
+            sameSite: 'lax',
+            path: '/',
+            maxAge: 60 * 60 * 24 * 365,
+          })
+        }
+        return response
+      }
     }
 
     const existing = await prisma.songRequestTrack.findFirst({
@@ -93,6 +128,7 @@ export async function POST(
         popularity: metadata.popularity,
         requesterFirstName,
         requesterLastName,
+        requesterSessionKey: sessionKey || null,
       },
     })
 
@@ -114,12 +150,23 @@ export async function POST(
       )
     }
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         request: created,
       },
       { status: 201 }
     )
+
+    if (shouldSetCookie && sessionKey) {
+      response.cookies.set(SESSION_COOKIE, sessionKey, {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 365,
+      })
+    }
+
+    return response
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
       return NextResponse.json(

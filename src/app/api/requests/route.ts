@@ -40,6 +40,7 @@ export async function GET(request: NextRequest) {
         eventType: list.eventType,
         eventDate: list.eventDate,
         eventTime: list.eventTime,
+        publicDescription: list.publicDescription ?? null,
         createdAt: list.createdAt,
         requestsCount: list._count?.requests ?? 0,
         publicUrl: `/requests/${list.id}`,
@@ -61,6 +62,9 @@ export async function POST(request: NextRequest) {
     const eventType = typeof body?.eventType === 'string' ? body.eventType.trim() : ''
     const eventDate = typeof body?.eventDate === 'string' ? body.eventDate.trim() : ''
     const eventTime = typeof body?.eventTime === 'string' ? body.eventTime.trim() : null
+    const publicDescriptionRaw =
+      typeof body?.publicDescription === 'string' ? body.publicDescription.trim() : ''
+    const publicDescription = publicDescriptionRaw.length > 0 ? publicDescriptionRaw : null
 
     if (!name || !eventType || !eventDate) {
       return NextResponse.json(
@@ -98,6 +102,7 @@ export async function POST(request: NextRequest) {
         eventType,
         eventDate,
         eventTime: eventTime || null,
+        publicDescription,
         spotifyPlaylistId: playlist?.id ?? null,
         spotifyPlaylistUrl: playlist?.external_urls?.spotify ?? null,
       },
@@ -111,6 +116,7 @@ export async function POST(request: NextRequest) {
           eventType: list.eventType,
           eventDate: list.eventDate,
           eventTime: list.eventTime,
+          publicDescription: list.publicDescription ?? null,
           createdAt: list.createdAt,
           spotifyPlaylistId: list.spotifyPlaylistId,
           spotifyPlaylistUrl: list.spotifyPlaylistUrl,

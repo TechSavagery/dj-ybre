@@ -5,6 +5,8 @@ import { getUserAccessToken, unfollowSpotifyPlaylist } from '@/lib/spotify'
 
 const prisma = db as any
 const SESSION_COOKIE = 'song_request_session'
+const REQUESTS_PER_SESSION_LIMIT = 3
+const BOOSTS_PER_SESSION_LIMIT = 5
 
 export async function GET(
   request: NextRequest,
@@ -49,6 +51,16 @@ export async function GET(
 
     const votedIds = new Set(votes.map((vote: any) => vote.requestId))
 
+    const boostsUsed = votes.length
+    const requestsUsed = sessionKey
+      ? await prisma.songRequestTrack.count({
+          where: {
+            listId: params.id,
+            requesterSessionKey: sessionKey,
+          },
+        })
+      : 0
+
     const response = NextResponse.json({
       list: {
         id: list.id,
@@ -56,8 +68,17 @@ export async function GET(
         eventType: list.eventType,
         eventDate: list.eventDate,
         eventTime: list.eventTime,
+        publicDescription: list.publicDescription ?? null,
         createdAt: list.createdAt,
         publicUrl: `/requests/${list.id}`,
+      },
+      session: {
+        boostsUsed,
+        boostsLimit: BOOSTS_PER_SESSION_LIMIT,
+        boostsRemaining: Math.max(0, BOOSTS_PER_SESSION_LIMIT - boostsUsed),
+        requestsUsed,
+        requestsLimit: REQUESTS_PER_SESSION_LIMIT,
+        requestsRemaining: Math.max(0, REQUESTS_PER_SESSION_LIMIT - requestsUsed),
       },
       requests: list.requests.map((requestItem: any) => ({
         id: requestItem.id,
@@ -106,6 +127,46 @@ export async function GET(
       { error: 'Failed to fetch request list' },
       { status: 500 }
     )
+  }
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const cookieToken = request.cookies.get('spotify_access_token')?.value
+    try {
+      await getUserAccessToken(cookieToken)
+    } catch {
+      return NextResponse.json({ error: 'Not authenticated with Spotify' }, { status: 401 })
+    }
+
+    const body = await request.json().catch(() => ({}))
+    const publicDescriptionRaw =
+      typeof body?.publicDescription === 'string' ? body.publicDescription.trim() : ''
+    const publicDescription = publicDescriptionRaw.length > 0 ? publicDescriptionRaw : null
+
+    const updated = await prisma.songRequestList.update({
+      where: { id: params.id },
+      data: { publicDescription },
+    })
+
+    return NextResponse.json({
+      list: {
+        id: updated.id,
+        name: updated.name,
+        eventType: updated.eventType,
+        eventDate: updated.eventDate,
+        eventTime: updated.eventTime,
+        publicDescription: updated.publicDescription ?? null,
+        createdAt: updated.createdAt,
+        publicUrl: `/requests/${updated.id}`,
+      },
+    })
+  } catch (error) {
+    console.error('Error updating request list:', error)
+    return NextResponse.json({ error: 'Failed to update request list' }, { status: 500 })
   }
 }
 

@@ -15,6 +15,7 @@ interface RequestList {
   eventDate: string
   eventTime?: string | null
   publicUrl: string
+  publicDescription?: string | null
 }
 
 interface SongRequestItem {
@@ -36,6 +37,10 @@ export default function RequestsManageListPage() {
   const [requests, setRequests] = useState<SongRequestItem[]>([])
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
+  const [publicDescriptionDraft, setPublicDescriptionDraft] = useState('')
+  const [publicDescriptionStatus, setPublicDescriptionStatus] = useState<
+    'idle' | 'saving' | 'success' | 'error'
+  >('idle')
 
   const load = useCallback(async () => {
     if (!listId) return
@@ -50,6 +55,7 @@ export default function RequestsManageListPage() {
       const data = await res.json()
       setList(data.list || null)
       setRequests(Array.isArray(data.requests) ? data.requests : [])
+      setPublicDescriptionDraft(data?.list?.publicDescription || '')
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Unable to load request list')
     } finally {
@@ -100,6 +106,31 @@ export default function RequestsManageListPage() {
     }
   }
 
+  const savePublicDescription = async () => {
+    if (!listId) return
+    setPublicDescriptionStatus('saving')
+    try {
+      const res = await fetch(`/api/requests/${listId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ publicDescription: publicDescriptionDraft || null }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || 'Failed to update public description')
+      }
+      const data = await res.json()
+      setList(data.list || null)
+      setPublicDescriptionDraft(data?.list?.publicDescription || '')
+      setPublicDescriptionStatus('success')
+      window.setTimeout(() => setPublicDescriptionStatus('idle'), 1200)
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : 'Failed to update public description')
+      setPublicDescriptionStatus('error')
+      window.setTimeout(() => setPublicDescriptionStatus('idle'), 1200)
+    }
+  }
+
   if (loading) {
     return (
       <Container className="mt-24 sm:mt-32 lg:mt-40">
@@ -140,6 +171,35 @@ export default function RequestsManageListPage() {
             <span className="relative top-px">Delete list</span>
           </button>
         </div>
+
+        <FadeIn>
+          <Border className="mb-10 p-8">
+            <h2 className="text-xl font-semibold text-neutral-950">Public page message</h2>
+            <p className="mt-2 text-sm text-neutral-600">
+              This replaces the helper text shown above the public request form.
+            </p>
+            <div className="mt-5 space-y-3">
+              <textarea
+                value={publicDescriptionDraft}
+                onChange={(e) => setPublicDescriptionDraft(e.target.value)}
+                placeholder="Search Spotify, pick the track, then drop your name to submit."
+                rows={4}
+                className="w-full rounded-xl border border-neutral-300 bg-transparent px-4 py-3 text-base/6 text-neutral-950 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5"
+              />
+              <div className="flex flex-wrap items-center gap-3">
+                <Button
+                  onClick={savePublicDescription}
+                  disabled={publicDescriptionStatus === 'saving'}
+                >
+                  {publicDescriptionStatus === 'saving' ? 'Saving...' : 'Save message'}
+                </Button>
+                {publicDescriptionStatus === 'success' ? (
+                  <span className="text-sm text-green-700">Saved.</span>
+                ) : null}
+              </div>
+            </div>
+          </Border>
+        </FadeIn>
 
         <FadeIn>
           <Border className="p-8">

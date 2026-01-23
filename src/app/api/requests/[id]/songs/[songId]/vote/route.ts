@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 
 const prisma = db as any
 const SESSION_COOKIE = 'song_request_session'
+const BOOSTS_PER_SESSION_LIMIT = 5
 
 export async function POST(
   request: NextRequest,
@@ -31,6 +32,32 @@ export async function POST(
         { error: 'Requested song not found' },
         { status: 404 }
       )
+    }
+
+    if (sessionKey) {
+      const boostsUsed = await prisma.songRequestVote.count({
+        where: {
+          sessionKey,
+          request: {
+            listId: params.id,
+          },
+        },
+      })
+      if (boostsUsed >= BOOSTS_PER_SESSION_LIMIT) {
+        const response = NextResponse.json(
+          { error: 'Only 5 boosts per session.' },
+          { status: 429 }
+        )
+        if (shouldSetCookie && sessionKey) {
+          response.cookies.set(SESSION_COOKIE, sessionKey, {
+            httpOnly: true,
+            sameSite: 'lax',
+            path: '/',
+            maxAge: 60 * 60 * 24 * 365,
+          })
+        }
+        return response
+      }
     }
 
     const updated = await prisma.$transaction(async (tx: any) => {
