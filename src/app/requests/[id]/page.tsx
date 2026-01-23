@@ -66,6 +66,13 @@ function formatRequesterName(firstName: string, lastName: string) {
   return `${firstName} ${lastInitial}`.trim()
 }
 
+function isSchoolDanceEventType(eventType: string) {
+  const normalized = String(eventType || '')
+    .toLowerCase()
+    .replace(/[^a-z]/g, '')
+  return normalized === 'schooldance'
+}
+
 function sortRequests(items: SongRequestItem[]) {
   return [...items].sort((a, b) => {
     if (b.voteCount !== a.voteCount) {
@@ -132,7 +139,11 @@ export default function RequestListPage() {
     const timeoutId = setTimeout(async () => {
       setIsSearching(true)
       try {
-        const res = await fetch(`/api/spotify/search?q=${encodeURIComponent(query)}&limit=5`)
+        const nonExplicit = list?.eventType ? isSchoolDanceEventType(list.eventType) : false
+        const url = `/api/spotify/search?q=${encodeURIComponent(query)}&limit=5${
+          nonExplicit ? '&nonExplicit=1' : ''
+        }`
+        const res = await fetch(url)
         if (!res.ok) return
         const data = await res.json()
         setResults(Array.isArray(data.tracks) ? data.tracks : [])
@@ -144,7 +155,7 @@ export default function RequestListPage() {
     }, 400)
 
     return () => clearTimeout(timeoutId)
-  }, [query])
+  }, [query, list?.eventType])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

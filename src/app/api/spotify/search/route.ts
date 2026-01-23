@@ -7,6 +7,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const query = searchParams.get('q')
     const limit = parseInt(searchParams.get('limit') || '10')
+    const nonExplicit =
+      searchParams.get('nonExplicit') === '1' || searchParams.get('nonExplicit') === 'true'
     
     if (!query || query.trim().length === 0) {
       return NextResponse.json({ tracks: [], artists: [] })
@@ -29,7 +31,7 @@ export async function GET(request: NextRequest) {
       )
     }
     
-    const results = await searchSpotify(query, accessToken, limit)
+    const results = await searchSpotify(query, accessToken, { limit, nonExplicit })
     
     return NextResponse.json({
       tracks: results.tracks.map((track: any) => ({

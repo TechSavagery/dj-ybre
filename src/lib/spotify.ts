@@ -233,13 +233,31 @@ export async function getAccessTokenForApi(
 }
 
 // Search for tracks and artists
-export async function searchSpotify(query: string, accessToken: string, limit = 10) {
+export async function searchSpotify(
+  query: string,
+  accessToken: string,
+  options: number | { limit?: number; nonExplicit?: boolean } = 10
+) {
+  const limit = typeof options === 'number' ? options : (options.limit ?? 10)
+  const nonExplicit = typeof options === 'number' ? false : Boolean(options.nonExplicit)
+
   const client = getSpotifyClient(accessToken)
-  const results = await client.search(query, ['track', 'artist'], { limit })
-  
+
+  // If we need non-explicit tracks, fetch more candidates so we can filter down
+  // to clean versions while still returning up to `limit` results.
+  const searchLimit = nonExplicit ? Math.min(Math.max(limit * 4, limit), 50) : limit
+  const results = await client.search(query, ['track', 'artist'], { limit: searchLimit })
+
+  const rawTracks = results.body.tracks?.items || []
+  const rawArtists = results.body.artists?.items || []
+
+  const tracks = nonExplicit
+    ? rawTracks.filter((t: any) => t && t.explicit === false).slice(0, limit)
+    : rawTracks.slice(0, limit)
+
   return {
-    tracks: results.body.tracks?.items || [],
-    artists: results.body.artists?.items || [],
+    tracks,
+    artists: rawArtists,
   }
 }
 
@@ -365,13 +383,41 @@ export async function createSpotifyPlaylist(
   description?: string,
   isPublic = false
 ) {
-  const client = getSpotifyClient(accessToken)
-  const me = await client.getMe()
-  const playlist = await client.createPlaylist(me.body.id, name, {
-    public: isPublic,
-    description,
-  })
-  return playlist.body
+  // NOTE: We intentionally use direct HTTP calls for playlist operations.
+  // `spotify-web-api-node` has been observed to crash Next route handlers in dev
+  // (superagent callback errors). Plain fetch is more reliable here.
+  const headers = {
+    Authorization: `Bearer ${accessToken}`,
+    'Content-Type': 'application/json',
+  }
+
+  const meRes = await fetch('https://api.spotify.com/v1/me', { headers })
+  if (!meRes.ok) {
+    const text = await meRes.text().catch(() => '')
+    throw new Error(`Spotify getMe failed: ${meRes.status} ${text}`)
+  }
+  const me = (await meRes.json()) as { id: string }
+
+  const createRes = await fetch(
+    `https://api.spotify.com/v1/users/${encodeURIComponent(me.id)}/playlists`,
+    {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        name,
+        public: isPublic,
+        collaborative: false,
+        description,
+      }),
+    }
+  )
+
+  if (createRes.status !== 201) {
+    const text = await createRes.text().catch(() => '')
+    throw new Error(`Spotify createPlaylist failed: ${createRes.status} ${text}`)
+  }
+
+  return (await createRes.json()) as any
 }
 
 export async function addTracksToSpotifyPlaylist(
@@ -379,13 +425,79 @@ export async function addTracksToSpotifyPlaylist(
   playlistId: string,
   trackIds: string[]
 ) {
-  const client = getSpotifyClient(accessToken)
   const uris = trackIds
     .map((id) => (id.startsWith('spotify:track:') ? id : `spotify:track:${id}`))
     .filter(Boolean)
 
   if (uris.length === 0) return
-  await client.addTracksToPlaylist(playlistId, uris)
+
+  const res = await fetch(
+    `https://api.spotify.com/v1/playlists/${encodeURIComponent(playlistId)}/tracks`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ uris }),
+    }
+  )
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`Spotify addTracks failed: ${res.status} ${text}`)
+  }
+}
+
+export async function removeTracksFromSpotifyPlaylist(
+  accessToken: string,
+  playlistId: string,
+  trackIds: string[]
+) {
+  const uris = trackIds
+    .map((id) => (id.startsWith('spotify:track:') ? id : `spotify:track:${id}`))
+    .filter(Boolean)
+
+  if (uris.length === 0) return
+
+  const res = await fetch(
+    `https://api.spotify.com/v1/playlists/${encodeURIComponent(playlistId)}/tracks`,
+    {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        tracks: uris.map((uri) => ({ uri })),
+      }),
+    }
+  )
+
+  // Spotify returns 200 OK with a snapshot_id on success.
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`Spotify removeTracks failed: ${res.status} ${text}`)
+  }
+}
+
+// Spotify "deleting" a playlist is effectively unfollowing it.
+export async function unfollowSpotifyPlaylist(accessToken: string, playlistId: string) {
+  const res = await fetch(
+    `https://api.spotify.com/v1/playlists/${encodeURIComponent(playlistId)}/followers`,
+    {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  )
+
+  // Spotify returns 200 OK on success.
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`Spotify unfollow playlist failed: ${res.status} ${text}`)
+  }
 }
 
 

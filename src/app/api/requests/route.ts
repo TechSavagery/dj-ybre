@@ -4,10 +4,28 @@ import { createSpotifyPlaylist, getUserAccessToken } from '@/lib/spotify'
 
 const prisma = db as any
 
-export async function GET() {
+function formatLocalDate(date: Date) {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+export async function GET(request: NextRequest) {
   try {
+    const url = new URL(request.url)
+    const includePast = url.searchParams.get('includePast') === '1'
+    const today = formatLocalDate(new Date())
     const lists = await prisma.songRequestList.findMany({
-      orderBy: { createdAt: 'desc' },
+      where: includePast
+        ? undefined
+        : {
+            // eventDate is stored as YYYY-MM-DD, so lexicographic compare works.
+            eventDate: { gte: today },
+          },
+      orderBy: includePast
+        ? [{ createdAt: 'desc' }]
+        : [{ eventDate: 'asc' }, { createdAt: 'desc' }],
       include: {
         _count: {
           select: { requests: true },

@@ -1,6 +1,11 @@
 const readline = require('readline')
 const SpotifyWebApi = require('spotify-web-api-node')
 
+// Node scripts don't automatically load `.env` like Next.js does.
+// Use Next's env loader so `.env*` works consistently across dev/prod.
+const { loadEnvConfig } = require('@next/env')
+loadEnvConfig(process.cwd())
+
 const clientId = process.env.SPOTIFY_CLIENT_ID
 const clientSecret = process.env.SPOTIFY_CLIENT_SECRET
 const redirectUri = process.env.SPOTIFY_REDIRECT_URI

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { db } from '@/lib/db'
+import { getUserAccessToken, unfollowSpotifyPlaylist } from '@/lib/spotify'
 
 const prisma = db as any
 const SESSION_COOKIE = 'song_request_session'
@@ -105,5 +106,51 @@ export async function GET(
       { error: 'Failed to fetch request list' },
       { status: 500 }
     )
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const list = await prisma.songRequestList.findUnique({
+      where: { id: params.id },
+      select: {
+        id: true,
+        spotifyPlaylistId: true,
+      },
+    })
+
+    if (!list) {
+      return NextResponse.json({ error: 'Request list not found' }, { status: 404 })
+    }
+
+    const cookieToken = request.cookies.get('spotify_access_token')?.value
+    let accessToken: string
+    try {
+      accessToken = await getUserAccessToken(cookieToken)
+    } catch {
+      return NextResponse.json({ error: 'Not authenticated with Spotify' }, { status: 401 })
+    }
+
+    if (list.spotifyPlaylistId) {
+      try {
+        await unfollowSpotifyPlaylist(accessToken, list.spotifyPlaylistId)
+      } catch (spotifyError) {
+        console.error('Failed to unfollow Spotify playlist:', spotifyError)
+        return NextResponse.json(
+          { error: 'Failed to delete Spotify playlist' },
+          { status: 502 }
+        )
+      }
+    }
+
+    await prisma.songRequestList.delete({ where: { id: list.id } })
+
+    return NextResponse.json({ ok: true })
+  } catch (error) {
+    console.error('Error deleting request list:', error)
+    return NextResponse.json({ error: 'Failed to delete request list' }, { status: 500 })
   }
 }
