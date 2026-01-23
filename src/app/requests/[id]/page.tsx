@@ -507,23 +507,7 @@ export default function RequestListPage() {
                       <span className="font-semibold text-neutral-950">
                         {formatRequesterName(firstName, lastName)}
                       </span>
-                      .{' '}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setNameLocked(false)
-                          if (typeof window !== 'undefined' && nameLockedKey) {
-                            try {
-                              window.localStorage.removeItem(nameLockedKey)
-                            } catch {
-                              // ignore
-                            }
-                          }
-                        }}
-                        className="font-semibold text-neutral-700 underline hover:text-neutral-950"
-                      >
-                        Change name
-                      </button>
+                      .
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
