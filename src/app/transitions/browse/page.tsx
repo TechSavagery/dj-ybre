@@ -4,13 +4,13 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useId } from 'react'
 import { motion } from 'framer-motion'
 import { ChevronDownIcon, MagnifyingGlassIcon } from '@heroicons/react/20/solid'
-import Image from 'next/image'
 import { Container } from '@/components/Container'
 import { FadeIn, FadeInStagger } from '@/components/FadeIn'
 import { PageIntro } from '@/components/PageIntro'
 import { Border } from '@/components/Border'
 import { TRANSITION_TYPES } from '@/lib/transitions'
 import Link from 'next/link'
+import { SpotifyPlayOverlayImage } from '@/components/SpotifyPlayOverlayImage'
 
 interface TransitionTrack {
   id: string
@@ -19,6 +19,7 @@ interface TransitionTrack {
   artist: string
   album?: string
   albumImage?: string
+  externalUrl?: string
   bpm?: number
   key?: number
   mode?: number
@@ -275,13 +276,14 @@ function TransitionCard({
               {transition.tracks.map((track, idx) => (
                 <div key={track.id} className="flex items-center gap-3">
                   {track.albumImage && (
-                    <Image
+                    <SpotifyPlayOverlayImage
                       src={track.albumImage}
                       alt={track.album || track.name}
-                      width={40}
-                      height={40}
-                      className="w-10 h-10 rounded object-cover flex-shrink-0"
-                      unoptimized
+                      href={track.externalUrl}
+                      mode="popup"
+                      spotifyUri={`spotify:track:${track.spotifyId}`}
+                      size={40}
+                      className="w-10 h-10 rounded flex-shrink-0"
                     />
                   )}
                   <div className="flex-1 min-w-0">

@@ -1,8 +1,8 @@
 'use client'
 
-import Image from 'next/image'
 import { HeartIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid'
+import { SpotifyPlayOverlayImage } from '@/components/SpotifyPlayOverlayImage'
 
 interface TrackItemProps {
   track: {
@@ -65,13 +65,13 @@ export function TrackItem({
         </div>
       )}
       {track.imageUrl && (
-        <Image
+        <SpotifyPlayOverlayImage
           src={track.imageUrl}
           alt={track.album || track.name}
-          width={48}
-          height={48}
-          className="w-12 h-12 rounded object-cover"
-          unoptimized
+          href={track.externalUrl}
+          spotifyUri={track.spotifyId ? `spotify:track:${track.spotifyId}` : undefined}
+          size={48}
+          className="w-12 h-12 rounded"
         />
       )}
       <div className="flex-1 min-w-0">
@@ -87,11 +87,6 @@ export function TrackItem({
         <span className="text-xs text-neutral-500">
           {formatDuration(track.duration)}
         </span>
-        {track.previewUrl && (
-          <audio controls className="h-8">
-            <source src={track.previewUrl} type="audio/mpeg" />
-          </audio>
-        )}
         <button
           onClick={() => onHeart(track.id)}
           className={`p-2 rounded transition-colors ${

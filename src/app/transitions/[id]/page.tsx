@@ -1,10 +1,10 @@
 import { notFound } from 'next/navigation'
-import Image from 'next/image'
 import { Container } from '@/components/Container'
 import { FadeIn } from '@/components/FadeIn'
 import { PageIntro } from '@/components/PageIntro'
 import { Border } from '@/components/Border'
 import { Button } from '@/components/Button'
+import { SpotifyPlayOverlayImage } from '@/components/SpotifyPlayOverlayImage'
 import { db } from '@/lib/db'
 import {
   getReccoBeatsAudioFeaturesByTrackIds,
@@ -174,13 +174,13 @@ export default async function TransitionDetailPage({
                   {transition.tracks.map((track: any, idx: number) => (
                     <div key={track.id} className="flex items-start gap-4">
                       {track.albumImage && (
-                        <Image
+                        <SpotifyPlayOverlayImage
                           src={track.albumImage}
                           alt={track.album || track.name}
-                          width={80}
-                          height={80}
-                          className="w-20 h-20 rounded object-cover flex-shrink-0"
-                          unoptimized
+                          href={track.externalUrl}
+                          spotifyUri={track.spotifyId ? `spotify:track:${track.spotifyId}` : undefined}
+                          size={80}
+                          className="w-20 h-20 rounded flex-shrink-0"
                         />
                       )}
                       <div className="flex-1">

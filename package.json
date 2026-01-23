@@ -13,7 +13,8 @@
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "spotify:refresh-token": "node scripts/spotify-refresh-token.js"
   },
   "browserslist": "defaults, not ie <= 11",
   "dependencies": {

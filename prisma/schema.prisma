@@ -162,3 +162,75 @@ model TransitionPoint {
   @@index([trackId])
   @@map("transition_points")
 }
+
+// Song request list models
+model SongRequestList {
+  id         String             @id @default(cuid())
+  name       String
+  eventType  String             // school dance, wedding, bar/club, etc.
+  eventDate  String             // YYYY-MM-DD (local date only)
+  eventTime  String?            // HH:mm (local time)
+  publicDescription String?     // Public-facing helper text shown on the request page
+  spotifyPlaylistId  String?
+  spotifyPlaylistUrl String?
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  requests   SongRequestTrack[]
+
+  @@index([createdAt])
+  @@map("song_request_lists")
+}
+
+model SongRequestTrack {
+  id                 String            @id @default(cuid())
+  listId             String
+  spotifyId          String
+  reccoBeatsId       String?
+  name               String
+  artist             String
+  artists            Json?
+  album              String?
+  albumImage         String?
+  duration           Int
+  previewUrl         String?
+  externalUrl        String?
+  bpm                Float?
+  key                Int?
+  mode               Int?
+  timeSignature      Int?
+  energy             Float?
+  danceability       Float?
+  valence            Float?
+  audioFeatures      Json?
+  genres             String[]          @default([])
+  releaseDate        String?
+  popularity         Int?
+  requesterFirstName String
+  requesterLastName  String
+  requesterSessionKey String?
+  voteCount          Int               @default(0)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  list               SongRequestList   @relation(fields: [listId], references: [id], onDelete: Cascade)
+  votes              SongRequestVote[]
+
+  @@unique([listId, spotifyId])
+  @@index([listId])
+  @@index([spotifyId])
+  @@index([reccoBeatsId])
+  @@index([voteCount])
+  @@index([listId, requesterSessionKey])
+  @@map("song_request_tracks")
+}
+
+model SongRequestVote {
+  id         String           @id @default(cuid())
+  requestId  String
+  sessionKey String
+  createdAt  DateTime         @default(now())
+  request    SongRequestTrack @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@unique([requestId, sessionKey])
+  @@index([requestId])
+  @@map("song_request_votes")
+}
