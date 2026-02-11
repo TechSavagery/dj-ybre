@@ -6,6 +6,39 @@ import { ensureEventPortalDefaults, mapEventSummary } from '@/lib/eventPortalSer
 
 const prisma = db as any
 
+async function resolveEventType(input: {
+  eventTypeId?: unknown
+  eventTypeName?: unknown
+}) {
+  const eventTypeId =
+    typeof input.eventTypeId === 'string' && input.eventTypeId.trim().length > 0
+      ? input.eventTypeId.trim()
+      : ''
+  const eventTypeName =
+    typeof input.eventTypeName === 'string' && input.eventTypeName.trim().length > 0
+      ? input.eventTypeName.trim()
+      : ''
+
+  if (eventTypeId) {
+    return prisma.eventPortalEventType.findUnique({
+      where: { id: eventTypeId },
+    })
+  }
+
+  if (eventTypeName) {
+    return prisma.eventPortalEventType.findFirst({
+      where: {
+        name: {
+          equals: eventTypeName,
+          mode: 'insensitive',
+        },
+      },
+    })
+  }
+
+  return null
+}
+
 function formatLocalDate(date: Date) {
   const y = date.getFullYear()
   const m = String(date.getMonth() + 1).padStart(2, '0')
@@ -42,6 +75,7 @@ export async function GET(request: NextRequest) {
             eventDate: { gte: today },
           },
       include: {
+        eventType: true,
         template: {
           select: {
             id: true,
@@ -87,7 +121,6 @@ export async function POST(request: NextRequest) {
       typeof body?.notes === 'string' && body.notes.trim().length > 0
         ? body.notes.trim()
         : null
-    const eventTypeRaw = typeof body?.eventType === 'string' ? body.eventType.trim() : ''
     const eventStartTime =
       typeof body?.eventStartTime === 'string' && body.eventStartTime.trim().length > 0
         ? body.eventStartTime.trim()
@@ -107,6 +140,7 @@ export async function POST(request: NextRequest) {
     const template = await prisma.eventPortalTemplate.findUnique({
       where: { id: templateId },
       include: {
+        eventType: true,
         fields: true,
       },
     })
@@ -122,7 +156,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const eventType = eventTypeRaw || template.eventType
+    const selectedEventType = await resolveEventType({
+      eventTypeId: body?.eventTypeId,
+      eventTypeName: body?.eventType,
+    })
+    const eventType = selectedEventType || template.eventType
+    if (!eventType || !eventType.isActive) {
+      return NextResponse.json(
+        { error: 'A valid active event type is required' },
+        { status: 400 }
+      )
+    }
 
     const cookieToken = request.cookies.get('spotify_access_token')?.value
     let accessToken: string
@@ -138,7 +182,7 @@ export async function POST(request: NextRequest) {
     let playlist
     try {
       const playlistName = `${eventName} - Client Requests`
-      const description = `Event portal requests for ${eventName} (${eventType} on ${eventDate}).`
+      const description = `Event portal requests for ${eventName} (${eventType.name} on ${eventDate}).`
       playlist = await createSpotifyPlaylist(accessToken, playlistName, description, false)
     } catch (error) {
       return NextResponse.json(
@@ -151,9 +195,9 @@ export async function POST(request: NextRequest) {
     const event = await prisma.eventPortalEvent.create({
       data: {
         templateId,
+        eventTypeId: eventType.id,
         accessCode,
         eventName,
-        eventType,
         eventDate,
         eventStartTime,
         eventEndTime,
@@ -165,6 +209,7 @@ export async function POST(request: NextRequest) {
         spotifyPlaylistUrl: playlist?.external_urls?.spotify ?? null,
       },
       include: {
+        eventType: true,
         template: {
           select: {
             id: true,

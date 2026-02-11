@@ -29,8 +29,10 @@ export async function GET(
     const event = await prisma.eventPortalEvent.findUnique({
       where: { accessCode: params.accessCode },
       include: {
+        eventType: true,
         template: {
           include: {
+            eventType: true,
             fields: {
               orderBy: { fieldOrder: 'asc' },
             },
@@ -65,7 +67,9 @@ export async function GET(
       event: {
         id: event.id,
         eventName: event.eventName,
-        eventType: event.eventType,
+        eventTypeId: event.eventTypeId,
+        eventType: event.eventType?.name ?? null,
+        eventTypeSlug: event.eventType?.slug ?? null,
         eventDate: event.eventDate,
         eventStartTime: event.eventStartTime ?? null,
         eventEndTime: event.eventEndTime ?? null,

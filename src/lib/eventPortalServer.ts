@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import {
+  DEFAULT_EVENT_PORTAL_EVENT_TYPES,
   DEFAULT_EVENT_PORTAL_TEMPLATES,
   normalizeTemplateFields,
   slugify,
@@ -30,20 +31,73 @@ export async function buildUniqueTemplateSlug(
   }
 }
 
+export async function buildUniqueEventTypeSlug(
+  eventTypeName: string,
+  excludeEventTypeId?: string
+) {
+  const baseSlug = slugify(eventTypeName) || 'event-type'
+  let candidate = baseSlug
+  let suffix = 2
+
+  while (true) {
+    const existing = await prisma.eventPortalEventType.findFirst({
+      where: excludeEventTypeId
+        ? { slug: candidate, NOT: { id: excludeEventTypeId } }
+        : { slug: candidate },
+      select: { id: true },
+    })
+    if (!existing) {
+      return candidate
+    }
+    candidate = `${baseSlug}-${suffix}`
+    suffix += 1
+  }
+}
+
 export async function ensureEventPortalDefaults() {
+  for (const eventType of DEFAULT_EVENT_PORTAL_EVENT_TYPES) {
+    await prisma.eventPortalEventType.upsert({
+      where: { slug: eventType.slug },
+      update: {
+        name: eventType.name,
+        isSystem: true,
+        isActive: true,
+      },
+      create: {
+        name: eventType.name,
+        slug: eventType.slug,
+        isSystem: true,
+        isActive: true,
+      },
+    })
+  }
+
   const existingCount = await prisma.eventPortalTemplate.count()
   if (existingCount > 0) return
+
+  const eventTypes = await prisma.eventPortalEventType.findMany({
+    where: {
+      slug: {
+        in: DEFAULT_EVENT_PORTAL_EVENT_TYPES.map((eventType) => eventType.slug),
+      },
+    },
+  })
+  const eventTypeBySlug = new Map<string, any>(
+    eventTypes.map((eventType: any) => [eventType.slug, eventType])
+  )
 
   for (const defaultTemplate of DEFAULT_EVENT_PORTAL_TEMPLATES) {
     const normalized = normalizeTemplateFields(defaultTemplate.fields)
     if (normalized.errors.length > 0) continue
+    const eventType = eventTypeBySlug.get(defaultTemplate.eventTypeSlug)
+    if (!eventType) continue
 
     const slug = await buildUniqueTemplateSlug(defaultTemplate.name)
     await prisma.eventPortalTemplate.create({
       data: {
         name: defaultTemplate.name,
         slug,
-        eventType: defaultTemplate.eventType,
+        eventTypeId: eventType.id,
         description: defaultTemplate.description,
         isDefault: true,
         fields: {
@@ -64,11 +118,23 @@ export async function ensureEventPortalDefaults() {
 }
 
 export function mapTemplateWithFields(template: any) {
+  const eventType = template.eventType || null
   return {
     id: template.id,
     name: template.name,
     slug: template.slug,
-    eventType: template.eventType,
+    eventTypeId: template.eventTypeId,
+    eventType: eventType?.name ?? null,
+    eventTypeSlug: eventType?.slug ?? null,
+    eventTypeDetails: eventType
+      ? {
+          id: eventType.id,
+          name: eventType.name,
+          slug: eventType.slug,
+          isSystem: Boolean(eventType.isSystem),
+          isActive: Boolean(eventType.isActive),
+        }
+      : null,
     description: template.description ?? null,
     isDefault: Boolean(template.isDefault),
     isArchived: Boolean(template.isArchived),
@@ -94,12 +160,15 @@ export function mapTemplateWithFields(template: any) {
 }
 
 export function mapEventSummary(event: any) {
+  const eventType = event.eventType || null
   return {
     id: event.id,
     templateId: event.templateId,
+    eventTypeId: event.eventTypeId,
     templateName: event.template?.name ?? null,
     eventName: event.eventName,
-    eventType: event.eventType,
+    eventType: eventType?.name ?? null,
+    eventTypeSlug: eventType?.slug ?? null,
     eventDate: event.eventDate,
     eventStartTime: event.eventStartTime ?? null,
     eventEndTime: event.eventEndTime ?? null,

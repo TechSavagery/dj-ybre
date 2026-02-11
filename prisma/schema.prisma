@@ -251,20 +251,37 @@ model SongRequestVote {
 }
 
 // Event portal models (template builder + personalized client forms)
+model EventPortalEventType {
+  id        String               @id @default(cuid())
+  name      String               @unique
+  slug      String               @unique
+  isSystem  Boolean              @default(false)
+  isActive  Boolean              @default(true)
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+  templates EventPortalTemplate[]
+  events    EventPortalEvent[]
+
+  @@index([isActive])
+  @@index([createdAt])
+  @@map("event_portal_event_types")
+}
+
 model EventPortalTemplate {
   id          String                   @id @default(cuid())
   name        String
   slug        String                   @unique
-  eventType   String
+  eventTypeId String
   description String?
   isDefault   Boolean                  @default(false)
   isArchived  Boolean                  @default(false)
   createdAt   DateTime                 @default(now())
   updatedAt   DateTime                 @updatedAt
+  eventType   EventPortalEventType     @relation(fields: [eventTypeId], references: [id], onDelete: Restrict)
   fields      EventPortalTemplateField[]
   events      EventPortalEvent[]
 
-  @@index([eventType])
+  @@index([eventTypeId])
   @@index([createdAt])
   @@map("event_portal_templates")
 }
@@ -293,9 +310,9 @@ model EventPortalTemplateField {
 model EventPortalEvent {
   id                String               @id @default(cuid())
   templateId        String
+  eventTypeId       String
   accessCode        String               @unique
   eventName         String
-  eventType         String
   eventDate         String
   eventStartTime    String?
   eventEndTime      String?
@@ -308,8 +325,10 @@ model EventPortalEvent {
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
   template          EventPortalTemplate  @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  eventType         EventPortalEventType @relation(fields: [eventTypeId], references: [id], onDelete: Restrict)
   submission        EventPortalSubmission?
 
+  @@index([eventTypeId])
   @@index([eventDate])
   @@index([createdAt])
   @@map("event_portal_events")

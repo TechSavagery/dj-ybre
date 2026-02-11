@@ -5,6 +5,39 @@ import { buildUniqueTemplateSlug, mapTemplateWithFields } from '@/lib/eventPorta
 
 const prisma = db as any
 
+async function resolveEventType(input: {
+  eventTypeId?: unknown
+  eventTypeName?: unknown
+}) {
+  const eventTypeId =
+    typeof input.eventTypeId === 'string' && input.eventTypeId.trim().length > 0
+      ? input.eventTypeId.trim()
+      : ''
+  const eventTypeName =
+    typeof input.eventTypeName === 'string' && input.eventTypeName.trim().length > 0
+      ? input.eventTypeName.trim()
+      : ''
+
+  if (eventTypeId) {
+    return prisma.eventPortalEventType.findUnique({
+      where: { id: eventTypeId },
+    })
+  }
+
+  if (eventTypeName) {
+    return prisma.eventPortalEventType.findFirst({
+      where: {
+        name: {
+          equals: eventTypeName,
+          mode: 'insensitive',
+        },
+      },
+    })
+  }
+
+  return null
+}
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: { id: string } }
@@ -13,6 +46,7 @@ export async function GET(
     const template = await prisma.eventPortalTemplate.findUnique({
       where: { id: params.id },
       include: {
+        eventType: true,
         fields: {
           orderBy: { fieldOrder: 'asc' },
         },
@@ -49,6 +83,7 @@ export async function PATCH(
     const existing = await prisma.eventPortalTemplate.findUnique({
       where: { id: params.id },
       include: {
+        eventType: true,
         _count: {
           select: { events: true },
         },
@@ -61,14 +96,14 @@ export async function PATCH(
 
     const body = await request.json().catch(() => ({}))
     const hasName = typeof body?.name === 'string'
-    const hasEventType = typeof body?.eventType === 'string'
+    const hasEventType =
+      typeof body?.eventTypeId === 'string' || typeof body?.eventType === 'string'
     const hasDescription = body && Object.prototype.hasOwnProperty.call(body, 'description')
     const hasArchived = typeof body?.isArchived === 'boolean'
     const hasDefault = typeof body?.isDefault === 'boolean'
     const hasFields = Array.isArray(body?.fields)
 
     const name = hasName ? body.name.trim() : existing.name
-    const eventType = hasEventType ? body.eventType.trim() : existing.eventType
     const description =
       hasDescription && typeof body.description === 'string' && body.description.trim().length > 0
         ? body.description.trim()
@@ -76,9 +111,29 @@ export async function PATCH(
         ? null
         : existing.description
 
-    if (!name || !eventType) {
+    if (!name) {
       return NextResponse.json(
-        { error: 'name and eventType cannot be empty' },
+        { error: 'name cannot be empty' },
+        { status: 400 }
+      )
+    }
+
+    const resolvedEventType = hasEventType
+      ? await resolveEventType({
+          eventTypeId: body?.eventTypeId,
+          eventTypeName: body?.eventType,
+        })
+      : existing.eventType
+
+    if (!resolvedEventType) {
+      return NextResponse.json(
+        { error: 'A valid event type is required' },
+        { status: 400 }
+      )
+    }
+    if (hasEventType && !resolvedEventType.isActive) {
+      return NextResponse.json(
+        { error: 'Selected event type is inactive' },
         { status: 400 }
       )
     }
@@ -110,7 +165,7 @@ export async function PATCH(
       if (isDefault) {
         await tx.eventPortalTemplate.updateMany({
           where: {
-            eventType,
+            eventTypeId: resolvedEventType.id,
             NOT: { id: existing.id },
           },
           data: { isDefault: false },
@@ -122,7 +177,7 @@ export async function PATCH(
         data: {
           name,
           slug,
-          eventType,
+          eventTypeId: resolvedEventType.id,
           description,
           isArchived: hasArchived ? Boolean(body.isArchived) : existing.isArchived,
           isDefault,
@@ -151,6 +206,7 @@ export async function PATCH(
       return tx.eventPortalTemplate.findUnique({
         where: { id: existing.id },
         include: {
+          eventType: true,
           fields: {
             orderBy: { fieldOrder: 'asc' },
           },

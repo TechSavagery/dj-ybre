@@ -160,15 +160,26 @@ export const EVENT_PORTAL_COMPONENT_LIBRARY: Array<{
   },
 ]
 
+export const DEFAULT_EVENT_PORTAL_EVENT_TYPES = [
+  { name: 'Wedding', slug: 'wedding' },
+  { name: 'School Dance', slug: 'school-dance' },
+  { name: 'Corporate Event', slug: 'corporate-event' },
+  { name: 'Birthday Party', slug: 'birthday-party' },
+  { name: 'Bar / Club', slug: 'bar-club' },
+  { name: 'Quinceanera', slug: 'quinceanera' },
+  { name: 'Sweet 16', slug: 'sweet-16' },
+  { name: 'Private Party', slug: 'private-party' },
+] as const
+
 export const DEFAULT_EVENT_PORTAL_TEMPLATES: Array<{
   name: string
-  eventType: string
+  eventTypeSlug: string
   description: string
   fields: EventPortalTemplateFieldInput[]
 }> = [
   {
     name: 'Wedding Planning Form',
-    eventType: 'Wedding',
+    eventTypeSlug: 'wedding',
     description:
       'Collect first dance, parent dance songs, timeline, and key reception details.',
     fields: [
@@ -188,7 +199,7 @@ export const DEFAULT_EVENT_PORTAL_TEMPLATES: Array<{
   },
   {
     name: 'School Dance Form',
-    eventType: 'School Dance',
+    eventTypeSlug: 'school-dance',
     description:
       'Capture start/end time, announcements, and student-friendly song requests.',
     fields: [
@@ -209,7 +220,7 @@ export const DEFAULT_EVENT_PORTAL_TEMPLATES: Array<{
   },
   {
     name: 'Corporate Event Form',
-    eventType: 'Corporate',
+    eventTypeSlug: 'corporate-event',
     description:
       'Collect run-of-show details, introduction notes, and music direction for company events.',
     fields: [
@@ -225,7 +236,7 @@ export const DEFAULT_EVENT_PORTAL_TEMPLATES: Array<{
   },
   {
     name: 'Bar / Club Gig Form',
-    eventType: 'Bar/Club',
+    eventTypeSlug: 'bar-club',
     description:
       'Collect audience vibe, set times, must-play tracks, and venue requests.',
     fields: [

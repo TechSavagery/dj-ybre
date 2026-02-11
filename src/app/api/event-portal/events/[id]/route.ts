@@ -9,6 +9,39 @@ import {
 
 const prisma = db as any
 
+async function resolveEventType(input: {
+  eventTypeId?: unknown
+  eventTypeName?: unknown
+}) {
+  const eventTypeId =
+    typeof input.eventTypeId === 'string' && input.eventTypeId.trim().length > 0
+      ? input.eventTypeId.trim()
+      : ''
+  const eventTypeName =
+    typeof input.eventTypeName === 'string' && input.eventTypeName.trim().length > 0
+      ? input.eventTypeName.trim()
+      : ''
+
+  if (eventTypeId) {
+    return prisma.eventPortalEventType.findUnique({
+      where: { id: eventTypeId },
+    })
+  }
+
+  if (eventTypeName) {
+    return prisma.eventPortalEventType.findFirst({
+      where: {
+        name: {
+          equals: eventTypeName,
+          mode: 'insensitive',
+        },
+      },
+    })
+  }
+
+  return null
+}
+
 function toAnswerValue(answer: any) {
   const type = String(answer?.field?.type || '')
   if (type === 'multi_select') {
@@ -34,8 +67,10 @@ export async function GET(
     const event = await prisma.eventPortalEvent.findUnique({
       where: { id: params.id },
       include: {
+        eventType: true,
         template: {
           include: {
+            eventType: true,
             fields: {
               orderBy: { fieldOrder: 'asc' },
             },
@@ -105,6 +140,7 @@ export async function PATCH(
     const existing = await prisma.eventPortalEvent.findUnique({
       where: { id: params.id },
       include: {
+        eventType: true,
         submission: {
           select: { id: true },
         },
@@ -124,10 +160,6 @@ export async function PATCH(
       typeof body?.eventName === 'string' && body.eventName.trim().length > 0
         ? body.eventName.trim()
         : existing.eventName
-    const eventType =
-      typeof body?.eventType === 'string' && body.eventType.trim().length > 0
-        ? body.eventType.trim()
-        : existing.eventType
     const eventDate =
       typeof body?.eventDate === 'string' && body.eventDate.trim().length > 0
         ? body.eventDate.trim()
@@ -154,6 +186,28 @@ export async function PATCH(
       typeof body?.status === 'string' && body.status.trim().length > 0
         ? body.status.trim()
         : existing.status
+    const hasEventType =
+      typeof body?.eventTypeId === 'string' || typeof body?.eventType === 'string'
+
+    const selectedEventType = hasEventType
+      ? await resolveEventType({
+          eventTypeId: body?.eventTypeId,
+          eventTypeName: body?.eventType,
+        })
+      : null
+    const eventType = selectedEventType || existing.eventType
+    if (!eventType) {
+      return NextResponse.json(
+        { error: 'A valid event type is required' },
+        { status: 400 }
+      )
+    }
+    if (hasEventType && !eventType.isActive) {
+      return NextResponse.json(
+        { error: 'Selected event type is inactive' },
+        { status: 400 }
+      )
+    }
 
     if (templateId !== existing.templateId && existing.submission) {
       return NextResponse.json(
@@ -179,8 +233,8 @@ export async function PATCH(
       where: { id: existing.id },
       data: {
         templateId,
+        eventTypeId: eventType.id,
         eventName,
-        eventType,
         eventDate,
         eventStartTime,
         eventEndTime,
@@ -190,6 +244,7 @@ export async function PATCH(
         status,
       },
       include: {
+        eventType: true,
         template: {
           select: { id: true, name: true },
         },

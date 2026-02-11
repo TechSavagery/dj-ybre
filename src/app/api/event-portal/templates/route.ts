@@ -9,6 +9,39 @@ import {
 
 const prisma = db as any
 
+async function resolveEventType(input: {
+  eventTypeId?: unknown
+  eventTypeName?: unknown
+}) {
+  const eventTypeId =
+    typeof input.eventTypeId === 'string' && input.eventTypeId.trim().length > 0
+      ? input.eventTypeId.trim()
+      : ''
+  const eventTypeName =
+    typeof input.eventTypeName === 'string' && input.eventTypeName.trim().length > 0
+      ? input.eventTypeName.trim()
+      : ''
+
+  if (eventTypeId) {
+    return prisma.eventPortalEventType.findUnique({
+      where: { id: eventTypeId },
+    })
+  }
+
+  if (eventTypeName) {
+    return prisma.eventPortalEventType.findFirst({
+      where: {
+        name: {
+          equals: eventTypeName,
+          mode: 'insensitive',
+        },
+      },
+    })
+  }
+
+  return null
+}
+
 export async function GET(request: NextRequest) {
   try {
     await ensureEventPortalDefaults()
@@ -19,6 +52,7 @@ export async function GET(request: NextRequest) {
     const templates = await prisma.eventPortalTemplate.findMany({
       where: includeArchived ? undefined : { isArchived: false },
       include: {
+        eventType: true,
         fields: {
           orderBy: { fieldOrder: 'asc' },
         },
@@ -26,7 +60,7 @@ export async function GET(request: NextRequest) {
           select: { events: true },
         },
       },
-      orderBy: [{ isDefault: 'desc' }, { eventType: 'asc' }, { name: 'asc' }],
+      orderBy: [{ isDefault: 'desc' }, { eventType: { name: 'asc' } }, { name: 'asc' }],
     })
 
     return NextResponse.json({
@@ -48,16 +82,26 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}))
     const name = typeof body?.name === 'string' ? body.name.trim() : ''
-    const eventType = typeof body?.eventType === 'string' ? body.eventType.trim() : ''
     const description =
       typeof body?.description === 'string' && body.description.trim().length > 0
         ? body.description.trim()
         : null
     const isDefault = Boolean(body?.isDefault)
 
-    if (!name || !eventType) {
+    if (!name) {
       return NextResponse.json(
-        { error: 'name and eventType are required' },
+        { error: 'name is required' },
+        { status: 400 }
+      )
+    }
+
+    const eventType = await resolveEventType({
+      eventTypeId: body?.eventTypeId,
+      eventTypeName: body?.eventType,
+    })
+    if (!eventType || !eventType.isActive) {
+      return NextResponse.json(
+        { error: 'A valid active event type is required' },
         { status: 400 }
       )
     }
@@ -75,7 +119,7 @@ export async function POST(request: NextRequest) {
     const template = await prisma.$transaction(async (tx: any) => {
       if (isDefault) {
         await tx.eventPortalTemplate.updateMany({
-          where: { eventType },
+          where: { eventTypeId: eventType.id },
           data: { isDefault: false },
         })
       }
@@ -84,7 +128,7 @@ export async function POST(request: NextRequest) {
         data: {
           name,
           slug,
-          eventType,
+          eventTypeId: eventType.id,
           description,
           isDefault,
           fields: {
@@ -101,6 +145,7 @@ export async function POST(request: NextRequest) {
           },
         },
         include: {
+          eventType: true,
           fields: {
             orderBy: { fieldOrder: 'asc' },
           },

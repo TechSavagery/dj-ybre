@@ -27,12 +27,23 @@ interface TemplateField {
 interface TemplateItem {
   id: string
   name: string
+  eventTypeId: string
   eventType: string
   description?: string | null
   isDefault: boolean
   isArchived: boolean
   eventsCount: number
   fields: TemplateField[]
+}
+
+interface EventTypeItem {
+  id: string
+  name: string
+  slug: string
+  isSystem: boolean
+  isActive: boolean
+  templatesCount: number
+  eventsCount: number
 }
 
 function formatFieldKey(label: string) {
@@ -44,12 +55,13 @@ function formatFieldKey(label: string) {
 }
 
 export default function EventPortalTemplatesManagePage() {
+  const [eventTypes, setEventTypes] = useState<EventTypeItem[]>([])
   const [templates, setTemplates] = useState<TemplateItem[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null)
 
   const [name, setName] = useState('')
-  const [eventType, setEventType] = useState('')
+  const [eventTypeId, setEventTypeId] = useState('')
   const [description, setDescription] = useState('')
   const [isDefault, setIsDefault] = useState(false)
   const [isArchived, setIsArchived] = useState(false)
@@ -57,13 +69,29 @@ export default function EventPortalTemplatesManagePage() {
 
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'success' | 'error'>('idle')
   const [message, setMessage] = useState('')
+  const [newEventTypeName, setNewEventTypeName] = useState('')
+  const [eventTypeSaveState, setEventTypeSaveState] = useState<'idle' | 'saving' | 'error'>('idle')
+  const [eventTypeMessage, setEventTypeMessage] = useState('')
 
   const fetchTemplates = async () => {
     setLoading(true)
     try {
-      const response = await fetch('/api/event-portal/templates?includeArchived=1')
-      if (!response.ok) return
-      const data = await response.json()
+      const [eventTypesResponse, templatesResponse] = await Promise.all([
+        fetch('/api/event-portal/event-types?includeInactive=1'),
+        fetch('/api/event-portal/templates?includeArchived=1'),
+      ])
+
+      if (eventTypesResponse.ok) {
+        const eventTypesData = await eventTypesResponse.json()
+        const nextEventTypes = Array.isArray(eventTypesData?.eventTypes)
+          ? eventTypesData.eventTypes
+          : []
+        setEventTypes(nextEventTypes)
+        setEventTypeId((prev) => prev || nextEventTypes[0]?.id || '')
+      }
+
+      if (!templatesResponse.ok) return
+      const data = await templatesResponse.json()
       const nextTemplates = Array.isArray(data?.templates) ? data.templates : []
       setTemplates(nextTemplates)
 
@@ -95,7 +123,7 @@ export default function EventPortalTemplatesManagePage() {
   const resetBuilder = () => {
     setActiveTemplateId(null)
     setName('')
-    setEventType('')
+    setEventTypeId(eventTypes[0]?.id || '')
     setDescription('')
     setIsDefault(false)
     setIsArchived(false)
@@ -107,7 +135,7 @@ export default function EventPortalTemplatesManagePage() {
   const selectTemplate = (template: TemplateItem) => {
     setActiveTemplateId(template.id)
     setName(template.name)
-    setEventType(template.eventType)
+    setEventTypeId(template.eventTypeId)
     setDescription(template.description || '')
     setIsDefault(Boolean(template.isDefault))
     setIsArchived(Boolean(template.isArchived))
@@ -122,6 +150,35 @@ export default function EventPortalTemplatesManagePage() {
     )
     setMessage('')
     setSaveState('idle')
+  }
+
+  const createEventType = async () => {
+    const trimmed = newEventTypeName.trim()
+    if (!trimmed) return
+    setEventTypeSaveState('saving')
+    setEventTypeMessage('')
+    try {
+      const response = await fetch('/api/event-portal/event-types', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmed }),
+      })
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data.error || 'Failed to create event type')
+      }
+      const data = await response.json()
+      const created = data?.eventType as EventTypeItem | undefined
+      setNewEventTypeName('')
+      setEventTypeSaveState('idle')
+      setEventTypeMessage('Event type created.')
+      await fetchTemplates()
+      if (created?.id) setEventTypeId(created.id)
+      window.setTimeout(() => setEventTypeMessage(''), 1500)
+    } catch (error) {
+      setEventTypeSaveState('error')
+      setEventTypeMessage(error instanceof Error ? error.message : 'Failed to create event type')
+    }
   }
 
   const addFieldFromLibrary = (type: EventPortalFieldType) => {
@@ -182,7 +239,7 @@ export default function EventPortalTemplatesManagePage() {
 
     const payload = {
       name,
-      eventType,
+      eventTypeId,
       description: description || null,
       isDefault,
       isArchived,
@@ -356,13 +413,45 @@ export default function EventPortalTemplatesManagePage() {
                     <label className="block text-sm font-semibold text-neutral-950">
                       Event type
                     </label>
-                    <input
-                      type="text"
-                      value={eventType}
-                      onChange={(e) => setEventType(e.target.value)}
+                    <select
+                      value={eventTypeId}
+                      onChange={(e) => setEventTypeId(e.target.value)}
                       required
                       className="w-full rounded-xl border border-neutral-300 bg-transparent px-4 py-3 text-base/6 text-neutral-950 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5"
-                    />
+                    >
+                      {eventTypes
+                        .filter((eventType) => eventType.isActive)
+                        .map((eventType) => (
+                          <option key={eventType.id} value={eventType.id}>
+                            {eventType.name}
+                          </option>
+                        ))}
+                    </select>
+                    <div className="mt-3 flex gap-2">
+                      <input
+                        type="text"
+                        value={newEventTypeName}
+                        onChange={(e) => setNewEventTypeName(e.target.value)}
+                        placeholder="Create new event type"
+                        className="w-full rounded-xl border border-neutral-300 bg-transparent px-4 py-2 text-sm text-neutral-950 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5"
+                      />
+                      <Button
+                        type="button"
+                        onClick={createEventType}
+                        disabled={eventTypeSaveState === 'saving' || newEventTypeName.trim().length === 0}
+                      >
+                        {eventTypeSaveState === 'saving' ? 'Adding...' : 'Add'}
+                      </Button>
+                    </div>
+                    {eventTypeMessage ? (
+                      <p
+                        className={`text-xs ${
+                          eventTypeSaveState === 'error' ? 'text-red-700' : 'text-neutral-500'
+                        }`}
+                      >
+                        {eventTypeMessage}
+                      </p>
+                    ) : null}
                   </div>
                 </div>
 
@@ -579,7 +668,13 @@ export default function EventPortalTemplatesManagePage() {
                   </div>
                 ) : null}
 
-                <Button type="submit" disabled={saveState === 'saving'}>
+                <Button
+                  type="submit"
+                  disabled={
+                    saveState === 'saving' ||
+                    eventTypes.filter((eventType) => eventType.isActive).length === 0
+                  }
+                >
                   {saveState === 'saving'
                     ? 'Saving...'
                     : activeTemplateId
