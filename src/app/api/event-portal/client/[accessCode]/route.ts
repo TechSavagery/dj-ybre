@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { mapTemplateWithFields } from '@/lib/eventPortalServer'
+import { hasValidPortalUnlock } from '@/lib/eventPortalAccess'
 
 const prisma = db as any
 
@@ -54,6 +55,23 @@ export async function GET(
       return NextResponse.json({ error: 'Event form not found' }, { status: 404 })
     }
 
+    const requiresPin = Boolean(event.accessPinHash)
+    const unlocked = requiresPin ? hasValidPortalUnlock(_request, event.accessCode) : true
+    if (!unlocked) {
+      return NextResponse.json(
+        {
+          error: 'Access code required',
+          requiresPin: true,
+          eventPreview: {
+            eventName: event.eventName,
+            eventType: event.eventType?.name ?? null,
+            eventDate: event.eventDate,
+          },
+        },
+        { status: 401 }
+      )
+    }
+
     const answersByKey: Record<string, unknown> = {}
     if (Array.isArray(event.submission?.answers)) {
       for (const answer of event.submission.answers) {
@@ -73,8 +91,13 @@ export async function GET(
         eventDate: event.eventDate,
         eventStartTime: event.eventStartTime ?? null,
         eventEndTime: event.eventEndTime ?? null,
+        venueName: event.venueName ?? null,
+        organizerName: event.organizerName ?? null,
+        organizerEmail: event.organizerEmail ?? null,
+        organizerPhone: event.organizerPhone ?? null,
         clientName: event.clientName,
         status: event.status,
+        requiresPin,
       },
       template: mapTemplateWithFields(event.template),
       submission: event.submission

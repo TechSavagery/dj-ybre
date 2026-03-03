@@ -6,6 +6,7 @@ import {
   mapEventSummary,
   mapTemplateWithFields,
 } from '@/lib/eventPortalServer'
+import { hashPortalPin, isValidPortalPin, normalizePortalPin } from '@/lib/eventPortalAccess'
 
 const prisma = db as any
 
@@ -180,14 +181,49 @@ export async function PATCH(
       typeof body?.eventEndTime === 'string'
         ? body.eventEndTime.trim() || null
         : existing.eventEndTime
+    const venueName =
+      typeof body?.venueName === 'string'
+        ? body.venueName.trim() || null
+        : existing.venueName ?? null
+    const organizerName =
+      typeof body?.organizerName === 'string'
+        ? body.organizerName.trim() || null
+        : existing.organizerName ?? null
+    const organizerEmail =
+      typeof body?.organizerEmail === 'string'
+        ? body.organizerEmail.trim() || null
+        : existing.organizerEmail ?? null
+    const organizerPhone =
+      typeof body?.organizerPhone === 'string'
+        ? body.organizerPhone.trim() || null
+        : existing.organizerPhone ?? null
     const notes =
       typeof body?.notes === 'string' ? body.notes.trim() || null : existing.notes
     const status =
       typeof body?.status === 'string' && body.status.trim().length > 0
         ? body.status.trim()
         : existing.status
+    const hasAccessPin = body && Object.prototype.hasOwnProperty.call(body, 'accessPin')
+    const accessPinNormalized = hasAccessPin ? normalizePortalPin(body.accessPin) : ''
+    const accessPin =
+      hasAccessPin && accessPinNormalized.length === 0 ? null : accessPinNormalized || null
+    const accessPinHash =
+      hasAccessPin && accessPin
+        ? isValidPortalPin(accessPin)
+          ? hashPortalPin(accessPin)
+          : null
+        : hasAccessPin
+        ? null
+        : existing.accessPinHash ?? null
     const hasEventType =
       typeof body?.eventTypeId === 'string' || typeof body?.eventType === 'string'
+
+    if (hasAccessPin && accessPin && !isValidPortalPin(accessPin)) {
+      return NextResponse.json(
+        { error: 'accessPin must be a 4 to 6 digit code' },
+        { status: 400 }
+      )
+    }
 
     const selectedEventType = hasEventType
       ? await resolveEventType({
@@ -238,8 +274,13 @@ export async function PATCH(
         eventDate,
         eventStartTime,
         eventEndTime,
+        venueName,
+        organizerName,
+        organizerEmail,
+        organizerPhone,
         clientName,
         clientEmail,
+        accessPinHash,
         notes,
         status,
       },

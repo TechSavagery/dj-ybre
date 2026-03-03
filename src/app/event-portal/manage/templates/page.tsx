@@ -1,11 +1,17 @@
 'use client'
 
 import { useMemo, useState, useEffect } from 'react'
-import { Border } from '@/components/Border'
-import { Button } from '@/components/Button'
-import { Container } from '@/components/Container'
-import { FadeIn } from '@/components/FadeIn'
-import { PageIntro } from '@/components/PageIntro'
+import { AdminButton } from '@/components/admin/AdminButton'
+import { AdminCard, AdminCardBody, AdminCardHeader } from '@/components/admin/AdminCard'
+import {
+  AdminCheckbox,
+  AdminHelp,
+  AdminInput,
+  AdminLabel,
+  AdminTextarea,
+} from '@/components/admin/AdminForm'
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader'
+import { AdminSelectMenu } from '@/components/admin/AdminSelectMenu'
 import {
   EVENT_PORTAL_COMPONENT_LIBRARY,
   EVENT_PORTAL_FIELD_TYPES,
@@ -315,35 +321,44 @@ export default function EventPortalTemplatesManagePage() {
   }
 
   return (
-    <>
-      <PageIntro eyebrow="Event Portal" title="Template builder">
-        <p>
-          Build reusable form templates by mixing field components for weddings, school dances,
-          corporate events, bar gigs, and more.
-        </p>
-      </PageIntro>
+    <div>
+      <AdminPageHeader
+        title="Template builder"
+        description="Build reusable form templates by mixing field components."
+        actions={
+          <>
+            <AdminButton variant="secondary" href="/event-portal/manage">
+              Back to events
+            </AdminButton>
+            <AdminButton variant="secondary" type="button" onClick={resetBuilder}>
+              New template
+            </AdminButton>
+          </>
+        }
+      />
 
-      <Container className="mt-24 sm:mt-32 lg:mt-40">
-        <div className="mb-10 flex flex-wrap gap-3">
-          <Button href="/event-portal/manage">Back to events</Button>
-          <Button onClick={resetBuilder}>New template</Button>
-        </div>
-
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[320px_minmax(0,_1fr)]">
-          <FadeIn>
-            <Border className="p-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-neutral-950">Templates</h3>
-                {loading ? <span className="text-xs text-neutral-500">Loading...</span> : null}
-              </div>
-              <div className="mt-4 space-y-3">
-                {templates.map((template) => (
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[340px_minmax(0,_1fr)]">
+        <AdminCard>
+          <AdminCardHeader className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-base font-bold text-[var(--admin-fg)]">Templates</h3>
+              <p className="mt-1 text-sm text-[var(--admin-muted)]">
+                {templates.length} total
+              </p>
+            </div>
+            {loading ? <span className="text-xs text-[var(--admin-muted)]">Loading...</span> : null}
+          </AdminCardHeader>
+          <AdminCardBody>
+            <div className="space-y-3">
+              {templates.map((template) => {
+                const active = activeTemplateId === template.id
+                return (
                   <div
                     key={template.id}
-                    className={`rounded-xl border p-4 transition ${
-                      activeTemplateId === template.id
-                        ? 'border-neutral-950 bg-neutral-50'
-                        : 'border-neutral-200'
+                    className={`rounded-2xl border px-4 py-4 transition ${
+                      active
+                        ? 'border-[var(--admin-primary)] bg-[var(--admin-surface-2)]'
+                        : 'border-[var(--admin-border)] bg-[var(--admin-surface)] hover:bg-[var(--admin-surface-2)]'
                     }`}
                   >
                     <button
@@ -351,342 +366,303 @@ export default function EventPortalTemplatesManagePage() {
                       onClick={() => selectTemplate(template)}
                       className="block w-full text-left"
                     >
-                      <p className="text-sm font-semibold text-neutral-950">{template.name}</p>
-                      <p className="text-xs text-neutral-500">{template.eventType}</p>
-                      <p className="mt-1 text-xs text-neutral-500">
-                        {template.fields.length} field
-                        {template.fields.length === 1 ? '' : 's'} · {template.eventsCount} event
-                        {template.eventsCount === 1 ? '' : 's'}
+                      <p className="text-sm font-bold text-[var(--admin-fg)]">{template.name}</p>
+                      <p className="mt-0.5 text-xs text-[var(--admin-muted)]">{template.eventType}</p>
+                      <p className="mt-2 text-xs text-[var(--admin-muted)]">
+                        {template.fields.length} field{template.fields.length === 1 ? '' : 's'} ·{' '}
+                        {template.eventsCount} event{template.eventsCount === 1 ? '' : 's'}
                       </p>
                     </button>
+
                     <div className="mt-3 flex flex-wrap gap-2">
                       {template.isDefault ? (
-                        <span className="rounded-full border border-neutral-200 px-3 py-1 text-xs text-neutral-600">
+                        <span className="rounded-full border border-[var(--admin-border)] bg-[var(--admin-surface)] px-3 py-1 text-xs font-semibold text-[var(--admin-muted)]">
                           Default
                         </span>
                       ) : null}
                       {template.isArchived ? (
-                        <span className="rounded-full border border-neutral-200 px-3 py-1 text-xs text-neutral-600">
+                        <span className="rounded-full border border-[var(--admin-border)] bg-[var(--admin-surface)] px-3 py-1 text-xs font-semibold text-[var(--admin-muted)]">
                           Archived
                         </span>
                       ) : null}
-                      <button
+                      <AdminButton
+                        variant="danger"
+                        size="sm"
                         type="button"
                         onClick={() => deleteTemplate(template)}
-                        className="rounded-full border border-red-200 px-3 py-1 text-xs text-red-700 hover:text-red-900"
                       >
                         Delete
-                      </button>
+                      </AdminButton>
                     </div>
                   </div>
-                ))}
-              </div>
-            </Border>
-          </FadeIn>
+                )
+              })}
+            </div>
+          </AdminCardBody>
+        </AdminCard>
 
-          <FadeIn>
-            <Border className="p-8">
-              <form onSubmit={saveTemplate} className="space-y-8">
-                <div>
-                  <h2 className="text-xl font-semibold text-neutral-950">
-                    {activeTemplateId ? 'Edit template' : 'Create template'}
-                  </h2>
-                  <p className="mt-2 text-sm text-neutral-600">
-                    Add components, customize prompts, and save reusable templates for future events.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-neutral-950">
-                      Template name
-                    </label>
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      required
-                      className="w-full rounded-xl border border-neutral-300 bg-transparent px-4 py-3 text-base/6 text-neutral-950 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-neutral-950">
-                      Event type
-                    </label>
-                    <select
-                      value={eventTypeId}
-                      onChange={(e) => setEventTypeId(e.target.value)}
-                      required
-                      className="w-full rounded-xl border border-neutral-300 bg-transparent px-4 py-3 text-base/6 text-neutral-950 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5"
-                    >
-                      {eventTypes
-                        .filter((eventType) => eventType.isActive)
-                        .map((eventType) => (
-                          <option key={eventType.id} value={eventType.id}>
-                            {eventType.name}
-                          </option>
-                        ))}
-                    </select>
-                    <div className="mt-3 flex gap-2">
-                      <input
-                        type="text"
-                        value={newEventTypeName}
-                        onChange={(e) => setNewEventTypeName(e.target.value)}
-                        placeholder="Create new event type"
-                        className="w-full rounded-xl border border-neutral-300 bg-transparent px-4 py-2 text-sm text-neutral-950 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5"
-                      />
-                      <Button
-                        type="button"
-                        onClick={createEventType}
-                        disabled={eventTypeSaveState === 'saving' || newEventTypeName.trim().length === 0}
-                      >
-                        {eventTypeSaveState === 'saving' ? 'Adding...' : 'Add'}
-                      </Button>
-                    </div>
-                    {eventTypeMessage ? (
-                      <p
-                        className={`text-xs ${
-                          eventTypeSaveState === 'error' ? 'text-red-700' : 'text-neutral-500'
-                        }`}
-                      >
-                        {eventTypeMessage}
-                      </p>
-                    ) : null}
-                  </div>
-                </div>
-
+        <AdminCard>
+          <AdminCardHeader>
+            <h2 className="text-base font-bold text-[var(--admin-fg)]">
+              {activeTemplateId ? 'Edit template' : 'Create template'}
+            </h2>
+            <p className="mt-1 text-sm text-[var(--admin-muted)]">
+              Add components, customize prompts, and save reusable templates for future events.
+            </p>
+          </AdminCardHeader>
+          <AdminCardBody>
+            <form onSubmit={saveTemplate} className="space-y-8">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-neutral-950">
-                    Template description
-                  </label>
-                  <textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    rows={3}
-                    className="w-full rounded-xl border border-neutral-300 bg-transparent px-4 py-3 text-base/6 text-neutral-950 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5"
-                  />
+                  <AdminLabel>Template name</AdminLabel>
+                  <AdminInput type="text" value={name} onChange={(e) => setName(e.target.value)} required />
                 </div>
-
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <label className="flex items-center gap-3 rounded-xl border border-neutral-200 px-4 py-3 text-sm text-neutral-700">
-                    <input
-                      type="checkbox"
-                      checked={isDefault}
-                      onChange={(e) => setIsDefault(e.target.checked)}
-                      className="h-4 w-4 rounded border-neutral-300 text-neutral-950 focus:ring-neutral-950"
+                <div className="space-y-2">
+                  <AdminLabel>Event type</AdminLabel>
+                    <AdminSelectMenu
+                      value={eventTypeId || null}
+                      onChange={(nextId) => setEventTypeId(nextId)}
+                      options={eventTypes
+                        .filter((eventType) => eventType.isActive)
+                        .map((eventType) => ({ value: eventType.id, label: eventType.name }))}
+                      placeholder="Select an event type"
+                      disabled={eventTypes.filter((eventType) => eventType.isActive).length === 0}
                     />
-                    <span>Set as default for this event type</span>
-                  </label>
-                  <label className="flex items-center gap-3 rounded-xl border border-neutral-200 px-4 py-3 text-sm text-neutral-700">
-                    <input
-                      type="checkbox"
-                      checked={isArchived}
-                      onChange={(e) => setIsArchived(e.target.checked)}
-                      className="h-4 w-4 rounded border-neutral-300 text-neutral-950 focus:ring-neutral-950"
-                    />
-                    <span>Archive template (hide from active list)</span>
-                  </label>
-                </div>
 
-                <div>
-                  <h3 className="text-lg font-semibold text-neutral-950">Component library</h3>
-                  <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                    {EVENT_PORTAL_COMPONENT_LIBRARY.map((item) => (
-                      <button
-                        key={item.type}
-                        type="button"
-                        onClick={() => addFieldFromLibrary(item.type)}
-                        className="rounded-xl border border-neutral-200 px-4 py-3 text-left transition hover:border-neutral-950"
-                      >
-                        <p className="text-sm font-semibold text-neutral-950">{item.title}</p>
-                        <p className="mt-1 text-xs text-neutral-600">{item.description}</p>
-                      </button>
-                    ))}
+                  <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,_1fr)_auto]">
+                    <AdminInput
+                      type="text"
+                      value={newEventTypeName}
+                      onChange={(e) => setNewEventTypeName(e.target.value)}
+                      placeholder="Create new event type"
+                    />
+                    <AdminButton
+                      type="button"
+                      onClick={createEventType}
+                      disabled={eventTypeSaveState === 'saving' || newEventTypeName.trim().length === 0}
+                    >
+                      {eventTypeSaveState === 'saving' ? 'Adding...' : 'Add'}
+                    </AdminButton>
                   </div>
-                </div>
 
-                <div>
-                  <h3 className="text-lg font-semibold text-neutral-950">Template fields</h3>
-                  {fields.length === 0 ? (
-                    <p className="mt-3 text-sm text-neutral-500">
-                      Add one or more components from the library.
+                  {eventTypeMessage ? (
+                    <p
+                      className={`text-xs ${
+                        eventTypeSaveState === 'error'
+                          ? 'text-[var(--admin-danger)]'
+                          : 'text-[var(--admin-muted)]'
+                      }`}
+                    >
+                      {eventTypeMessage}
                     </p>
                   ) : null}
-                  <div className="mt-4 space-y-4">
-                    {fields.map((field, index) => (
-                      <div key={`${field.key}-${index}`} className="rounded-xl border border-neutral-200 p-4">
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                          <div className="space-y-2">
-                            <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                              Label
-                            </label>
-                            <input
-                              type="text"
-                              value={field.label}
-                              onChange={(e) => {
-                                const nextLabel = e.target.value
-                                updateField(index, {
-                                  label: nextLabel,
-                                  key: field.key || formatFieldKey(nextLabel),
-                                })
-                              }}
-                              className="w-full rounded-xl border border-neutral-300 bg-transparent px-4 py-2 text-sm text-neutral-950 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                              Field key
-                            </label>
-                            <input
-                              type="text"
-                              value={field.key}
-                              onChange={(e) => updateField(index, { key: formatFieldKey(e.target.value) })}
-                              className="w-full rounded-xl border border-neutral-300 bg-transparent px-4 py-2 text-sm text-neutral-950 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5"
-                            />
-                          </div>
-                        </div>
+                </div>
+              </div>
 
-                        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-                          <div className="space-y-2">
-                            <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                              Type
-                            </label>
-                            <select
+              <div className="space-y-2">
+                <AdminLabel>Template description</AdminLabel>
+                <AdminTextarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <label className="flex items-center gap-3 rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-surface)] px-4 py-3 text-sm text-[var(--admin-fg)]">
+                  <AdminCheckbox checked={isDefault} onChange={(e) => setIsDefault(e.target.checked)} />
+                  <span>Set as default for this event type</span>
+                </label>
+                <label className="flex items-center gap-3 rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-surface)] px-4 py-3 text-sm text-[var(--admin-fg)]">
+                  <AdminCheckbox checked={isArchived} onChange={(e) => setIsArchived(e.target.checked)} />
+                  <span>Archive template (hide from active list)</span>
+                </label>
+              </div>
+
+              <div>
+                <div className="flex items-end justify-between gap-3">
+                  <div>
+                    <h3 className="text-base font-bold text-[var(--admin-fg)]">Component library</h3>
+                    <p className="mt-1 text-sm text-[var(--admin-muted)]">
+                      Click a component to add it to this template.
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {EVENT_PORTAL_COMPONENT_LIBRARY.map((item) => (
+                    <button
+                      key={item.type}
+                      type="button"
+                      onClick={() => addFieldFromLibrary(item.type)}
+                      className="rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-surface)] px-4 py-3 text-left transition hover:border-[var(--admin-primary)] hover:bg-[var(--admin-surface-2)]"
+                    >
+                      <p className="text-sm font-bold text-[var(--admin-fg)]">{item.title}</p>
+                      <p className="mt-1 text-xs text-[var(--admin-muted)]">{item.description}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-base font-bold text-[var(--admin-fg)]">Template fields</h3>
+                {fields.length === 0 ? (
+                  <p className="mt-2 text-sm text-[var(--admin-muted)]">
+                    Add one or more components from the library.
+                  </p>
+                ) : null}
+
+                <div className="mt-4 space-y-4">
+                  {fields.map((field, index) => (
+                    <div
+                      key={`${field.key}-${index}`}
+                      className="rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-surface)] p-4"
+                    >
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div className="space-y-2">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--admin-muted)]">
+                            Label
+                          </p>
+                          <AdminInput
+                            type="text"
+                            value={field.label}
+                            onChange={(e) => {
+                              const nextLabel = e.target.value
+                              updateField(index, {
+                                label: nextLabel,
+                                key: field.key || formatFieldKey(nextLabel),
+                              })
+                            }}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--admin-muted)]">
+                            Field key
+                          </p>
+                          <AdminInput
+                            type="text"
+                            value={field.key}
+                            onChange={(e) => updateField(index, { key: formatFieldKey(e.target.value) })}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <div className="space-y-2">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--admin-muted)]">
+                            Type
+                          </p>
+                            <AdminSelectMenu
                               value={field.type}
-                              onChange={(e) =>
+                              onChange={(nextType) =>
                                 updateField(index, {
-                                  type: e.target.value as EventPortalFieldType,
+                                  type: nextType as EventPortalFieldType,
                                   options:
-                                    e.target.value === 'select' || e.target.value === 'multi_select'
+                                    nextType === 'select' || nextType === 'multi_select'
                                       ? field.options.length > 0
                                         ? field.options
                                         : ['Option 1']
                                       : [],
                                 })
                               }
-                              className="w-full rounded-xl border border-neutral-300 bg-transparent px-4 py-2 text-sm text-neutral-950 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5"
-                            >
-                              {EVENT_PORTAL_FIELD_TYPES.map((type) => (
-                                <option key={type} value={type}>
-                                  {type}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className="space-y-2 sm:col-span-2">
-                            <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                              Placeholder
-                            </label>
-                            <input
-                              type="text"
-                              value={field.placeholder || ''}
-                              onChange={(e) => updateField(index, { placeholder: e.target.value })}
-                              className="w-full rounded-xl border border-neutral-300 bg-transparent px-4 py-2 text-sm text-neutral-950 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5"
+                              options={EVENT_PORTAL_FIELD_TYPES.map((type) => ({
+                                value: type,
+                                label: type,
+                              }))}
+                              placeholder="Select field type"
+                              searchable={false}
                             />
-                          </div>
                         </div>
-
-                        <div className="mt-4 space-y-2">
-                          <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                            Helper text
-                          </label>
-                          <input
+                        <div className="space-y-2 sm:col-span-2">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--admin-muted)]">
+                            Placeholder
+                          </p>
+                          <AdminInput
                             type="text"
-                            value={field.helperText || ''}
-                            onChange={(e) => updateField(index, { helperText: e.target.value })}
-                            className="w-full rounded-xl border border-neutral-300 bg-transparent px-4 py-2 text-sm text-neutral-950 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5"
+                            value={field.placeholder || ''}
+                            onChange={(e) => updateField(index, { placeholder: e.target.value })}
                           />
                         </div>
-
-                        {field.type === 'select' || field.type === 'multi_select' ? (
-                          <div className="mt-4 space-y-2">
-                            <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                              Options (comma separated)
-                            </label>
-                            <input
-                              type="text"
-                              value={field.options.join(', ')}
-                              onChange={(e) =>
-                                updateField(index, {
-                                  options: e.target.value
-                                    .split(',')
-                                    .map((item) => item.trim())
-                                    .filter(Boolean),
-                                })
-                              }
-                              className="w-full rounded-xl border border-neutral-300 bg-transparent px-4 py-2 text-sm text-neutral-950 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5"
-                            />
-                          </div>
-                        ) : null}
-
-                        <div className="mt-4 flex flex-wrap items-center gap-2">
-                          <label className="inline-flex items-center gap-2 rounded-full border border-neutral-200 px-3 py-1 text-xs text-neutral-700">
-                            <input
-                              type="checkbox"
-                              checked={field.required}
-                              onChange={(e) => updateField(index, { required: e.target.checked })}
-                              className="h-3.5 w-3.5 rounded border-neutral-300 text-neutral-950 focus:ring-neutral-950"
-                            />
-                            Required
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() => moveField(index, 'up')}
-                            className="rounded-full border border-neutral-200 px-3 py-1 text-xs text-neutral-600 hover:text-neutral-950"
-                          >
-                            Move up
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => moveField(index, 'down')}
-                            className="rounded-full border border-neutral-200 px-3 py-1 text-xs text-neutral-600 hover:text-neutral-950"
-                          >
-                            Move down
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => removeField(index)}
-                            className="rounded-full border border-red-200 px-3 py-1 text-xs text-red-700 hover:text-red-900"
-                          >
-                            Remove
-                          </button>
-                        </div>
                       </div>
-                    ))}
-                  </div>
+
+                      <div className="mt-4 space-y-2">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-[var(--admin-muted)]">
+                          Helper text
+                        </p>
+                        <AdminInput
+                          type="text"
+                          value={field.helperText || ''}
+                          onChange={(e) => updateField(index, { helperText: e.target.value })}
+                        />
+                      </div>
+
+                      {field.type === 'select' || field.type === 'multi_select' ? (
+                        <div className="mt-4 space-y-2">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--admin-muted)]">
+                            Options (comma separated)
+                          </p>
+                          <AdminInput
+                            type="text"
+                            value={field.options.join(', ')}
+                            onChange={(e) =>
+                              updateField(index, {
+                                options: e.target.value
+                                  .split(',')
+                                  .map((item) => item.trim())
+                                  .filter(Boolean),
+                              })
+                            }
+                          />
+                        </div>
+                      ) : null}
+
+                      <div className="mt-4 flex flex-wrap items-center gap-2">
+                        <label className="inline-flex items-center gap-2 rounded-full border border-[var(--admin-border)] bg-[var(--admin-surface-2)] px-3 py-1 text-xs font-semibold text-[var(--admin-fg)]">
+                          <AdminCheckbox
+                            checked={field.required}
+                            onChange={(e) => updateField(index, { required: e.target.checked })}
+                            className="h-3.5 w-3.5"
+                          />
+                          Required
+                        </label>
+
+                        <AdminButton variant="secondary" size="sm" type="button" onClick={() => moveField(index, 'up')}>
+                          Move up
+                        </AdminButton>
+                        <AdminButton variant="secondary" size="sm" type="button" onClick={() => moveField(index, 'down')}>
+                          Move down
+                        </AdminButton>
+                        <AdminButton variant="danger" size="sm" type="button" onClick={() => removeField(index)}>
+                          Remove
+                        </AdminButton>
+                      </div>
+                    </div>
+                  ))}
                 </div>
+              </div>
 
-                {message ? (
-                  <div
-                    className={`rounded-lg border px-4 py-3 text-sm ${
-                      saveState === 'error'
-                        ? 'border-red-200 bg-red-50 text-red-700'
-                        : 'border-green-200 bg-green-50 text-green-700'
-                    }`}
-                  >
-                    {message}
-                  </div>
-                ) : null}
-
-                <Button
-                  type="submit"
-                  disabled={
-                    saveState === 'saving' ||
-                    eventTypes.filter((eventType) => eventType.isActive).length === 0
-                  }
+              {message ? (
+                <div
+                  className={`rounded-2xl border px-4 py-3 text-sm ${
+                    saveState === 'error'
+                      ? 'border-[color-mix(in_oklab,var(--admin-danger)_35%,white)] bg-red-50 text-[var(--admin-danger)]'
+                      : 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                  }`}
                 >
-                  {saveState === 'saving'
-                    ? 'Saving...'
-                    : activeTemplateId
+                  {message}
+                </div>
+              ) : null}
+
+              <AdminButton
+                type="submit"
+                disabled={saveState === 'saving' || eventTypes.filter((eventType) => eventType.isActive).length === 0}
+              >
+                {saveState === 'saving'
+                  ? 'Saving...'
+                  : activeTemplateId
                     ? 'Save template'
                     : 'Create template'}
-                </Button>
-              </form>
-            </Border>
-          </FadeIn>
-        </div>
-      </Container>
-    </>
+              </AdminButton>
+            </form>
+          </AdminCardBody>
+        </AdminCard>
+      </div>
+    </div>
   )
 }
 

@@ -16,8 +16,13 @@ interface PortalEvent {
   eventDate: string
   eventStartTime?: string | null
   eventEndTime?: string | null
+  venueName?: string | null
+  organizerName?: string | null
+  organizerEmail?: string | null
+  organizerPhone?: string | null
   clientName: string
   status: string
+  requiresPin?: boolean
 }
 
 interface TemplateField {
@@ -101,20 +106,50 @@ export default function EventPortalClientPage() {
   const accessCode = params?.accessCode
 
   const [eventData, setEventData] = useState<PortalEvent | null>(null)
+  const [eventPreview, setEventPreview] = useState<{
+    eventName: string
+    eventType: string | null
+    eventDate: string
+  } | null>(null)
   const [template, setTemplate] = useState<TemplatePayload | null>(null)
   const [submission, setSubmission] = useState<SubmissionPayload | null>(null)
   const [formValues, setFormValues] = useState<Record<string, unknown>>({})
   const [loading, setLoading] = useState(true)
   const [submitState, setSubmitState] = useState<'idle' | 'saving' | 'success' | 'error'>('idle')
   const [message, setMessage] = useState('')
+  const [locked, setLocked] = useState(false)
+  const [pin, setPin] = useState('')
+  const [unlockState, setUnlockState] = useState<'idle' | 'saving' | 'error'>('idle')
+  const [unlockMessage, setUnlockMessage] = useState('')
 
   const initializeFormValues = useCallback(
-    (fields: TemplateField[], answersByKey?: Record<string, unknown> | null) => {
+    (
+      fields: TemplateField[],
+      answersByKey?: Record<string, unknown> | null,
+      event?: PortalEvent | null
+    ) => {
       const nextValues: Record<string, unknown> = {}
       for (const field of fields) {
+        const key = field.key
+        const adminPrefill =
+          key === 'venue_name'
+            ? event?.venueName
+            : key === 'planner_name'
+            ? event?.organizerName
+            : key === 'event_host'
+            ? event?.organizerName
+            : key === 'host_email'
+            ? event?.organizerEmail
+            : key === 'promoter_contact'
+            ? event?.organizerName
+            : key === 'start_time'
+            ? event?.eventStartTime
+            : key === 'end_time'
+            ? event?.eventEndTime
+            : null
         nextValues[field.key] = normalizeIncomingFieldValue(
           field.type,
-          answersByKey?.[field.key]
+          answersByKey?.[field.key] ?? adminPrefill ?? null
         )
       }
       setFormValues(nextValues)
@@ -130,16 +165,27 @@ export default function EventPortalClientPage() {
       const response = await fetch(`/api/event-portal/client/${accessCode}`)
       if (!response.ok) {
         const data = await response.json().catch(() => ({}))
+        if (response.status === 401 && data?.requiresPin) {
+          setLocked(true)
+          setEventPreview(data?.eventPreview || null)
+          setLoading(false)
+          return
+        }
         throw new Error(data.error || 'Unable to load this event form')
       }
       const data = await response.json()
       const loadedTemplate = data.template as TemplatePayload
       const loadedSubmission = (data.submission || null) as SubmissionPayload | null
 
+      setLocked(false)
       setEventData(data.event || null)
       setTemplate(loadedTemplate)
       setSubmission(loadedSubmission)
-      initializeFormValues(loadedTemplate?.fields || [], loadedSubmission?.answersByKey || null)
+      initializeFormValues(
+        loadedTemplate?.fields || [],
+        loadedSubmission?.answersByKey || null,
+        data.event || null
+      )
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Unable to load this event form')
     } finally {
@@ -187,6 +233,12 @@ export default function EventPortalClientPage() {
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({}))
+        if (response.status === 401 && data?.requiresPin) {
+          setLocked(true)
+          setMessage('Please enter your access code to submit.')
+          setSubmitState('idle')
+          return
+        }
         const details = Array.isArray(data?.details) ? data.details.join('\n') : null
         throw new Error(details || data.error || 'Failed to submit form')
       }
@@ -194,7 +246,7 @@ export default function EventPortalClientPage() {
       const data = await response.json()
       setSubmitState('success')
       if (data?.submission?.answersByKey && template) {
-        initializeFormValues(template.fields, data.submission.answersByKey)
+        initializeFormValues(template.fields, data.submission.answersByKey, eventData)
       }
       if (data?.submission) {
         setSubmission(data.submission as SubmissionPayload)
@@ -206,11 +258,93 @@ export default function EventPortalClientPage() {
     }
   }
 
+  const unlock = async () => {
+    if (!accessCode) return
+    setUnlockState('saving')
+    setUnlockMessage('')
+    try {
+      const response = await fetch(`/api/event-portal/client/${accessCode}/unlock`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin }),
+      })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        throw new Error(data?.error || 'Unable to unlock portal')
+      }
+      setUnlockState('idle')
+      setLocked(false)
+      setPin('')
+      await loadForm()
+    } catch (error) {
+      setUnlockState('error')
+      setUnlockMessage(error instanceof Error ? error.message : 'Unable to unlock portal')
+    } finally {
+      setUnlockState('idle')
+    }
+  }
+
   if (loading) {
     return (
       <Container className="mt-24 sm:mt-32 lg:mt-40">
         <p className="text-center text-neutral-600">Loading event form...</p>
       </Container>
+    )
+  }
+
+  if (locked) {
+    return (
+      <div className="fixed inset-0 bg-neutral-950/50 backdrop-blur-sm">
+        <div className="mx-auto flex h-full max-w-lg items-center px-6">
+          <div className="w-full rounded-3xl bg-white p-8 shadow-2xl">
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+              Event portal
+            </p>
+            <h1 className="mt-2 text-2xl font-semibold text-neutral-950">Enter your access code</h1>
+            {eventPreview ? (
+              <p className="mt-2 text-sm text-neutral-600">
+                {eventPreview.eventName} · {formatDate(eventPreview.eventDate)}
+              </p>
+            ) : null}
+
+            <div className="mt-6 space-y-2">
+              <label className="block text-sm font-semibold text-neutral-950">Code (4–6 digits)</label>
+              <input
+                type="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                autoComplete="one-time-code"
+                value={pin}
+                onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                className="w-full rounded-2xl border border-neutral-300 px-4 py-4 text-center text-2xl font-semibold tracking-[0.35em] text-neutral-950 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5"
+                placeholder="••••"
+              />
+              <p className="text-xs text-neutral-500">
+                You’ll get this code from your DJ/organizer (text/email).
+              </p>
+            </div>
+
+            {unlockMessage ? (
+              <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {unlockMessage}
+              </div>
+            ) : null}
+
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <Button
+                type="button"
+                onClick={unlock}
+                disabled={unlockState === 'saving' || pin.length < 4}
+              >
+                {unlockState === 'saving' ? 'Unlocking...' : 'Unlock form'}
+              </Button>
+              <Button type="button" variant="secondary" href="/contact">
+                Need help?
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
     )
   }
 
@@ -245,6 +379,36 @@ export default function EventPortalClientPage() {
               <form onSubmit={handleSubmit} className="mt-8 space-y-6">
                 {sortedFields.map((field) => {
                   const currentValue = formValues[field.key]
+                  const isAdminProvided = [
+                    'venue_name',
+                    'planner_name',
+                    'event_host',
+                    'host_email',
+                    'promoter_contact',
+                    'start_time',
+                    'end_time',
+                  ].includes(field.key)
+
+                  if (isAdminProvided) {
+                    const display =
+                      typeof currentValue === 'string'
+                        ? currentValue
+                        : currentValue === null || currentValue === undefined
+                        ? ''
+                        : String(currentValue)
+                    if (!display) return null
+                    return (
+                      <div key={field.id} className="space-y-2 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+                        <p className="text-sm font-semibold text-neutral-950">{field.label}</p>
+                        {field.helperText ? (
+                          <p className="text-xs text-neutral-500">{field.helperText}</p>
+                        ) : null}
+                        <p className="text-sm text-neutral-700">{display}</p>
+                        <p className="text-xs text-neutral-500">Provided by your DJ/organizer.</p>
+                      </div>
+                    )
+                  }
+
                   const inputType =
                     field.type === 'email'
                       ? 'email'

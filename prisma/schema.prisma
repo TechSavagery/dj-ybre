@@ -312,10 +312,15 @@ model EventPortalEvent {
   templateId        String
   eventTypeId       String
   accessCode        String               @unique
+  accessPinHash     String?
   eventName         String
   eventDate         String
   eventStartTime    String?
   eventEndTime      String?
+  venueName         String?
+  organizerName     String?
+  organizerEmail    String?
+  organizerPhone    String?
   clientName        String
   clientEmail       String?
   notes             String?

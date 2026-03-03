@@ -3,6 +3,7 @@ import crypto from 'crypto'
 import { db } from '@/lib/db'
 import { createSpotifyPlaylist, getUserAccessToken } from '@/lib/spotify'
 import { ensureEventPortalDefaults, mapEventSummary } from '@/lib/eventPortalServer'
+import { hashPortalPin, isValidPortalPin, normalizePortalPin } from '@/lib/eventPortalAccess'
 
 const prisma = db as any
 
@@ -130,9 +131,44 @@ export async function POST(request: NextRequest) {
         ? body.eventEndTime.trim()
         : null
 
+    const venueName =
+      typeof body?.venueName === 'string' && body.venueName.trim().length > 0
+        ? body.venueName.trim()
+        : null
+    const organizerName =
+      typeof body?.organizerName === 'string' && body.organizerName.trim().length > 0
+        ? body.organizerName.trim()
+        : null
+    const organizerEmail =
+      typeof body?.organizerEmail === 'string' && body.organizerEmail.trim().length > 0
+        ? body.organizerEmail.trim()
+        : null
+    const organizerPhone =
+      typeof body?.organizerPhone === 'string' && body.organizerPhone.trim().length > 0
+        ? body.organizerPhone.trim()
+        : null
+
+    const accessPinRaw =
+      body && Object.prototype.hasOwnProperty.call(body, 'accessPin')
+        ? normalizePortalPin(body.accessPin)
+        : ''
+    const accessPin = accessPinRaw ? accessPinRaw : null
+    const accessPinHash = accessPin
+      ? isValidPortalPin(accessPin)
+        ? hashPortalPin(accessPin)
+        : null
+      : null
+
     if (!templateId || !eventName || !eventDate || !clientName) {
       return NextResponse.json(
         { error: 'templateId, eventName, eventDate, and clientName are required' },
+        { status: 400 }
+      )
+    }
+
+    if (accessPin && !isValidPortalPin(accessPin)) {
+      return NextResponse.json(
+        { error: 'accessPin must be a 4 to 6 digit code' },
         { status: 400 }
       )
     }
@@ -197,10 +233,15 @@ export async function POST(request: NextRequest) {
         templateId,
         eventTypeId: eventType.id,
         accessCode,
+        accessPinHash,
         eventName,
         eventDate,
         eventStartTime,
         eventEndTime,
+        venueName,
+        organizerName,
+        organizerEmail,
+        organizerPhone,
         clientName,
         clientEmail,
         notes,

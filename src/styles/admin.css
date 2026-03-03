@@ -1,0 +1,27 @@
+/* Admin theme tokens inspired by Vuexy (purple primary, light surfaces).
+   Scope everything under .admin-theme so public site is unaffected. */
+
+.admin-theme {
+  --admin-bg: #f5f6fa;
+  --admin-surface: #ffffff;
+  --admin-surface-2: #fbfbfd;
+  --admin-border: #e6e8f0;
+  --admin-fg: #2f2b3d;
+  --admin-muted: #6f6b7d;
+  --admin-primary: #7367f0;
+  --admin-primary-600: #5b50e5;
+  --admin-danger: #ea5455;
+  --admin-ring: rgba(115, 103, 240, 0.32);
+
+  color: var(--admin-fg);
+  background: var(--admin-bg);
+}
+
+.admin-theme ::selection {
+  background: rgba(115, 103, 240, 0.22);
+}
+
+.admin-theme a {
+  color: inherit;
+}
+

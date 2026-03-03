@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import {
   DEFAULT_EVENT_PORTAL_EVENT_TYPES,
@@ -7,6 +8,8 @@ import {
 } from '@/lib/eventPortal'
 
 const prisma = db as any
+
+let ensureEventPortalDefaultsInFlight: Promise<void> | null = null
 
 export async function buildUniqueTemplateSlug(
   templateName: string,
@@ -55,66 +58,106 @@ export async function buildUniqueEventTypeSlug(
 }
 
 export async function ensureEventPortalDefaults() {
-  for (const eventType of DEFAULT_EVENT_PORTAL_EVENT_TYPES) {
-    await prisma.eventPortalEventType.upsert({
-      where: { slug: eventType.slug },
-      update: {
-        name: eventType.name,
-        isSystem: true,
-        isActive: true,
-      },
-      create: {
-        name: eventType.name,
-        slug: eventType.slug,
-        isSystem: true,
-        isActive: true,
-      },
-    })
+  if (ensureEventPortalDefaultsInFlight) {
+    return ensureEventPortalDefaultsInFlight
   }
 
-  const existingCount = await prisma.eventPortalTemplate.count()
-  if (existingCount > 0) return
+  ensureEventPortalDefaultsInFlight = (async () => {
+    for (const eventType of DEFAULT_EVENT_PORTAL_EVENT_TYPES) {
+      await prisma.eventPortalEventType.upsert({
+        where: { slug: eventType.slug },
+        update: {
+          name: eventType.name,
+          isSystem: true,
+          isActive: true,
+        },
+        create: {
+          name: eventType.name,
+          slug: eventType.slug,
+          isSystem: true,
+          isActive: true,
+        },
+      })
+    }
 
-  const eventTypes = await prisma.eventPortalEventType.findMany({
-    where: {
-      slug: {
-        in: DEFAULT_EVENT_PORTAL_EVENT_TYPES.map((eventType) => eventType.slug),
-      },
-    },
-  })
-  const eventTypeBySlug = new Map<string, any>(
-    eventTypes.map((eventType: any) => [eventType.slug, eventType])
-  )
-
-  for (const defaultTemplate of DEFAULT_EVENT_PORTAL_TEMPLATES) {
-    const normalized = normalizeTemplateFields(defaultTemplate.fields)
-    if (normalized.errors.length > 0) continue
-    const eventType = eventTypeBySlug.get(defaultTemplate.eventTypeSlug)
-    if (!eventType) continue
-
-    const slug = await buildUniqueTemplateSlug(defaultTemplate.name)
-    await prisma.eventPortalTemplate.create({
-      data: {
-        name: defaultTemplate.name,
-        slug,
-        eventTypeId: eventType.id,
-        description: defaultTemplate.description,
-        isDefault: true,
-        fields: {
-          create: normalized.fields.map((field) => ({
-            key: field.key,
-            label: field.label,
-            helperText: field.helperText,
-            placeholder: field.placeholder,
-            type: field.type,
-            required: field.required,
-            options: field.options,
-            fieldOrder: field.fieldOrder,
-          })),
+    const eventTypes = await prisma.eventPortalEventType.findMany({
+      where: {
+        slug: {
+          in: DEFAULT_EVENT_PORTAL_EVENT_TYPES.map((eventType) => eventType.slug),
         },
       },
+      select: { id: true, slug: true },
     })
-  }
+    const eventTypeBySlug = new Map<string, { id: string; slug: string }>(
+      eventTypes.map((eventType: any) => [eventType.slug, eventType])
+    )
+
+    for (const defaultTemplate of DEFAULT_EVENT_PORTAL_TEMPLATES) {
+      const normalized = normalizeTemplateFields(defaultTemplate.fields)
+      if (normalized.errors.length > 0) continue
+      const eventType = eventTypeBySlug.get(defaultTemplate.eventTypeSlug)
+      if (!eventType) continue
+
+      // If the default template already exists, don't try to recreate it.
+      const existingDefault = await prisma.eventPortalTemplate.findFirst({
+        where: {
+          isDefault: true,
+          name: defaultTemplate.name,
+          eventTypeId: eventType.id,
+        },
+        select: { id: true },
+      })
+      if (existingDefault) continue
+
+      // Generate a unique slug (race-safe with retry).
+      let slug = slugify(defaultTemplate.name) || 'event-template'
+      let attempts = 0
+      while (attempts < 3) {
+        attempts += 1
+        slug = await buildUniqueTemplateSlug(defaultTemplate.name)
+
+        try {
+          await prisma.eventPortalTemplate.create({
+            data: {
+              name: defaultTemplate.name,
+              slug,
+              eventTypeId: eventType.id,
+              description: defaultTemplate.description,
+              isDefault: true,
+              fields: {
+                create: normalized.fields.map((field) => ({
+                  key: field.key,
+                  label: field.label,
+                  helperText: field.helperText,
+                  placeholder: field.placeholder,
+                  type: field.type,
+                  required: field.required,
+                  options: field.options,
+                  fieldOrder: field.fieldOrder,
+                })),
+              },
+            },
+          })
+          break
+        } catch (error) {
+          // Another request likely created the same slug between our check and create.
+          if (
+            error instanceof Prisma.PrismaClientKnownRequestError &&
+            error.code === 'P2002' &&
+            Array.isArray((error.meta as any)?.target) &&
+            (error.meta as any).target.includes('slug')
+          ) {
+            continue
+          }
+          throw error
+        }
+      }
+    }
+  })().finally(() => {
+    ensureEventPortalDefaultsInFlight = null
+  })
+
+  return ensureEventPortalDefaultsInFlight
 }
 
 export function mapTemplateWithFields(template: any) {
@@ -172,6 +215,10 @@ export function mapEventSummary(event: any) {
     eventDate: event.eventDate,
     eventStartTime: event.eventStartTime ?? null,
     eventEndTime: event.eventEndTime ?? null,
+    venueName: event.venueName ?? null,
+    organizerName: event.organizerName ?? null,
+    organizerEmail: event.organizerEmail ?? null,
+    organizerPhone: event.organizerPhone ?? null,
     clientName: event.clientName,
     clientEmail: event.clientEmail ?? null,
     notes: event.notes ?? null,

@@ -2,11 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { Border } from '@/components/Border'
-import { Button } from '@/components/Button'
-import { Container } from '@/components/Container'
-import { FadeIn } from '@/components/FadeIn'
-import { PageIntro } from '@/components/PageIntro'
+import { AdminButton } from '@/components/admin/AdminButton'
+import { AdminCard, AdminCardBody, AdminCardHeader } from '@/components/admin/AdminCard'
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader'
+import { AdminSelectMenu } from '@/components/admin/AdminSelectMenu'
 import { SpotifyPlayOverlayImage } from '@/components/SpotifyPlayOverlayImage'
 
 interface EventSummary {
@@ -209,109 +208,132 @@ export default function EventPortalManageEventDetailsPage() {
 
   if (loading) {
     return (
-      <Container className="mt-24 sm:mt-32 lg:mt-40">
-        <p className="text-center text-neutral-600">Loading event digest...</p>
-      </Container>
+      <AdminCard>
+        <AdminCardBody>
+          <p className="text-sm text-[var(--admin-muted)]">Loading event digest...</p>
+        </AdminCardBody>
+      </AdminCard>
     )
   }
 
   if (!eventData || !template) {
     return (
-      <Container className="mt-24 sm:mt-32 lg:mt-40">
-        <p className="text-center text-neutral-600">{message || 'Event not found.'}</p>
-        <div className="mt-8 flex justify-center">
-          <Button href="/event-portal/manage">Back to manage</Button>
+      <div className="space-y-4">
+        <AdminCard>
+          <AdminCardBody>
+            <p className="text-sm text-[var(--admin-muted)]">{message || 'Event not found.'}</p>
+          </AdminCardBody>
+        </AdminCard>
+        <div>
+          <AdminButton variant="secondary" href="/event-portal/manage">
+            Back to manage
+          </AdminButton>
         </div>
-      </Container>
+      </div>
     )
   }
 
   return (
-    <>
-      <PageIntro eyebrow="Event Portal" title={eventData.eventName}>
-        <p>
-          {eventData.eventType} · {formatDate(eventData.eventDate)}
-          {eventData.eventStartTime ? ` · ${formatTime(eventData.eventStartTime)}` : ''}
-          {eventData.eventEndTime ? ` - ${formatTime(eventData.eventEndTime)}` : ''}
-        </p>
-      </PageIntro>
+    <div>
+      <AdminPageHeader
+        title={eventData.eventName}
+        description={`${eventData.eventType} · ${formatDate(eventData.eventDate)}${
+          eventData.eventStartTime ? ` · ${formatTime(eventData.eventStartTime)}` : ''
+        }${eventData.eventEndTime ? ` - ${formatTime(eventData.eventEndTime)}` : ''}`}
+        actions={
+          <>
+            <AdminButton variant="secondary" href="/event-portal/manage">
+              Back to manage
+            </AdminButton>
+            <AdminButton variant="secondary" href={eventData.clientUrl}>
+              Open client form
+            </AdminButton>
+            <AdminButton variant="secondary" type="button" onClick={copyClientLink}>
+              Copy client link
+            </AdminButton>
+          </>
+        }
+      />
 
-      <Container className="mt-24 sm:mt-32 lg:mt-40">
-        <div className="mb-10 flex flex-wrap gap-3">
-          <Button href="/event-portal/manage">Back to manage</Button>
-          <Button href={eventData.clientUrl}>Open client form</Button>
-          <Button onClick={copyClientLink}>Copy client link</Button>
-        </div>
-
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,_1fr)_340px]">
-          <FadeIn>
-            <Border className="p-8">
-              <h2 className="text-xl font-semibold text-neutral-950">Submission digest</h2>
-              <p className="mt-2 text-sm text-neutral-600">
-                Template: {template.name}
-                {submission ? (
-                  <> · Submitted {new Date(submission.updatedAt).toLocaleString()}</>
-                ) : (
-                  <> · Waiting for client submission</>
-                )}
-              </p>
-
-              <div className="mt-8 space-y-6">
-                {sortedFields.map((field) => {
-                  const value = submission?.answersByKey?.[field.key]
-                  return (
-                    <div key={field.id} className="rounded-xl border border-neutral-200 p-4">
-                      <p className="text-sm font-semibold text-neutral-950">{field.label}</p>
-                      {field.helperText ? (
-                        <p className="mt-1 text-xs text-neutral-500">{field.helperText}</p>
-                      ) : null}
-                      <div className="mt-3">{renderAnswerValue(field, value)}</div>
-                    </div>
-                  )
-                })}
-              </div>
-            </Border>
-          </FadeIn>
-
-          <FadeIn>
-            <div className="space-y-6">
-              <Border className="p-6">
-                <h3 className="text-lg font-semibold text-neutral-950">Client</h3>
-                <p className="mt-2 text-sm text-neutral-700">{eventData.clientName}</p>
-                {eventData.clientEmail ? (
-                  <p className="text-sm text-neutral-600">{eventData.clientEmail}</p>
-                ) : null}
-                {eventData.notes ? (
-                  <p className="mt-3 whitespace-pre-line text-sm text-neutral-600">
-                    {eventData.notes}
-                  </p>
-                ) : null}
-              </Border>
-
-              <Border className="p-6">
-                <h3 className="text-lg font-semibold text-neutral-950">Status</h3>
-                <div className="mt-3 space-y-3">
-                  <select
-                    value={statusDraft}
-                    onChange={(e) => setStatusDraft(e.target.value)}
-                    className="w-full rounded-xl border border-neutral-300 bg-transparent px-4 py-3 text-sm text-neutral-950 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5"
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,_1fr)_360px]">
+        <AdminCard>
+          <AdminCardHeader>
+            <h2 className="text-base font-bold text-[var(--admin-fg)]">Submission digest</h2>
+            <p className="mt-1 text-sm text-[var(--admin-muted)]">
+              Template: {template.name}
+              {submission ? (
+                <> · Submitted {new Date(submission.updatedAt).toLocaleString()}</>
+              ) : (
+                <> · Waiting for client submission</>
+              )}
+            </p>
+          </AdminCardHeader>
+          <AdminCardBody>
+            <div className="space-y-4">
+              {sortedFields.map((field) => {
+                const value = submission?.answersByKey?.[field.key]
+                return (
+                  <div
+                    key={field.id}
+                    className="rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-surface)] p-4"
                   >
-                    <option value="sent">Sent to client</option>
-                    <option value="submitted">Submitted</option>
-                    <option value="approved">Reviewed/approved</option>
-                    <option value="complete">Complete</option>
-                  </select>
-                  <Button onClick={saveStatus} disabled={statusSaving}>
-                    {statusSaving ? 'Saving...' : 'Save status'}
-                  </Button>
-                  {message ? <p className="text-xs text-neutral-500">{message}</p> : null}
-                </div>
-              </Border>
+                    <p className="text-sm font-bold text-[var(--admin-fg)]">{field.label}</p>
+                    {field.helperText ? (
+                      <p className="mt-1 text-xs text-[var(--admin-muted)]">{field.helperText}</p>
+                    ) : null}
+                    <div className="mt-3">{renderAnswerValue(field, value)}</div>
+                  </div>
+                )
+              })}
             </div>
-          </FadeIn>
+          </AdminCardBody>
+        </AdminCard>
+
+        <div className="space-y-6">
+          <AdminCard>
+            <AdminCardHeader>
+              <h3 className="text-base font-bold text-[var(--admin-fg)]">Client</h3>
+            </AdminCardHeader>
+            <AdminCardBody>
+              <p className="text-sm text-[var(--admin-fg)]">{eventData.clientName}</p>
+              {eventData.clientEmail ? (
+                <p className="mt-1 text-sm text-[var(--admin-muted)]">{eventData.clientEmail}</p>
+              ) : null}
+              {eventData.notes ? (
+                <p className="mt-3 whitespace-pre-line text-sm text-[var(--admin-muted)]">
+                  {eventData.notes}
+                </p>
+              ) : null}
+            </AdminCardBody>
+          </AdminCard>
+
+          <AdminCard>
+            <AdminCardHeader>
+              <h3 className="text-base font-bold text-[var(--admin-fg)]">Status</h3>
+            </AdminCardHeader>
+            <AdminCardBody>
+              <div className="space-y-3">
+                <AdminSelectMenu
+                  value={statusDraft}
+                  onChange={(next) => setStatusDraft(next)}
+                  searchable={false}
+                  options={[
+                    { value: 'sent', label: 'Sent to client' },
+                    { value: 'submitted', label: 'Submitted' },
+                    { value: 'approved', label: 'Reviewed/approved' },
+                    { value: 'complete', label: 'Complete' },
+                  ]}
+                />
+                <AdminButton type="button" onClick={saveStatus} disabled={statusSaving}>
+                  {statusSaving ? 'Saving...' : 'Save status'}
+                </AdminButton>
+                {message ? <p className="text-xs text-[var(--admin-muted)]">{message}</p> : null}
+              </div>
+            </AdminCardBody>
+          </AdminCard>
         </div>
-      </Container>
-    </>
+      </div>
+    </div>
   )
 }
 

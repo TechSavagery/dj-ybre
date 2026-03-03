@@ -1,11 +1,11 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Border } from '@/components/Border'
-import { Button } from '@/components/Button'
-import { Container } from '@/components/Container'
-import { FadeIn } from '@/components/FadeIn'
-import { PageIntro } from '@/components/PageIntro'
+import { AdminButton } from '@/components/admin/AdminButton'
+import { AdminCard, AdminCardBody, AdminCardHeader } from '@/components/admin/AdminCard'
+import { AdminInput, AdminLabel, AdminTextarea, AdminHelp } from '@/components/admin/AdminForm'
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader'
+import { AdminSelectMenu } from '@/components/admin/AdminSelectMenu'
 
 interface TemplateItem {
   id: string
@@ -34,6 +34,10 @@ interface EventItem {
   eventDate: string
   eventStartTime?: string | null
   eventEndTime?: string | null
+  venueName?: string | null
+  organizerName?: string | null
+  organizerEmail?: string | null
+  organizerPhone?: string | null
   clientName: string
   clientEmail?: string | null
   notes?: string | null
@@ -59,8 +63,13 @@ export default function EventPortalManagePage() {
   const [eventDate, setEventDate] = useState('')
   const [eventStartTime, setEventStartTime] = useState('')
   const [eventEndTime, setEventEndTime] = useState('')
+  const [venueName, setVenueName] = useState('')
+  const [organizerName, setOrganizerName] = useState('')
+  const [organizerEmail, setOrganizerEmail] = useState('')
+  const [organizerPhone, setOrganizerPhone] = useState('')
   const [clientName, setClientName] = useState('')
   const [clientEmail, setClientEmail] = useState('')
+  const [accessPin, setAccessPin] = useState('')
   const [notes, setNotes] = useState('')
   const [status, setStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle')
   const [message, setMessage] = useState('')
@@ -184,8 +193,13 @@ export default function EventPortalManagePage() {
           eventDate,
           eventStartTime: eventStartTime || null,
           eventEndTime: eventEndTime || null,
+          venueName: venueName || null,
+          organizerName: organizerName || null,
+          organizerEmail: organizerEmail || null,
+          organizerPhone: organizerPhone || null,
           clientName,
           clientEmail: clientEmail || null,
+          accessPin: accessPin || null,
           notes: notes || null,
         }),
       })
@@ -204,8 +218,13 @@ export default function EventPortalManagePage() {
       setEventDate('')
       setEventStartTime('')
       setEventEndTime('')
+      setVenueName('')
+      setOrganizerName('')
+      setOrganizerEmail('')
+      setOrganizerPhone('')
       setClientName('')
       setClientEmail('')
+      setAccessPin('')
       setNotes('')
       await fetchData()
     } catch (error) {
@@ -232,281 +251,321 @@ export default function EventPortalManagePage() {
   }
 
   return (
-    <>
-      <PageIntro eyebrow="Event Portal" title="Manage events">
-        <p>Create personalized client links and review submissions in one dashboard.</p>
-      </PageIntro>
+    <div>
+      <AdminPageHeader
+        title="Manage events"
+        description="Create personalized client links and review submissions in one dashboard."
+        actions={
+          <>
+            <AdminButton variant="secondary" href="/event-portal/manage/templates">
+              Manage templates
+            </AdminButton>
+            <AdminButton variant="secondary" href="/event-portal">
+              Portal overview
+            </AdminButton>
+            {copied ? <span className="text-sm text-[var(--admin-muted)]">Link copied.</span> : null}
+          </>
+        }
+      />
 
-      <Container className="mt-24 sm:mt-32 lg:mt-40">
-        <div className="mb-10 flex flex-wrap items-center gap-3">
-          <Button href="/event-portal/manage/templates">Manage templates</Button>
-          <Button href="/event-portal">Portal overview</Button>
-          {copied ? <span className="text-sm text-neutral-600">Link copied.</span> : null}
-        </div>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,_1fr)_440px]">
+        <AdminCard>
+          <AdminCardHeader>
+            <h2 className="text-base font-bold text-[var(--admin-fg)]">Create new event portal</h2>
+            <p className="mt-1 text-sm text-[var(--admin-muted)]">
+              Creating an event will also create a Spotify playlist for song requests.
+            </p>
+          </AdminCardHeader>
+          <AdminCardBody>
+            <form onSubmit={handleCreateEvent} className="space-y-5">
+              <div className="space-y-2">
+                <AdminLabel>Template</AdminLabel>
+                <AdminSelectMenu
+                  value={templateId || null}
+                  onChange={(nextId) => {
+                    setTemplateId(nextId)
+                    const template = templates.find((item) => item.id === nextId)
+                    if (template) setEventTypeId(template.eventTypeId)
+                  }}
+                  options={templates.map((template) => ({
+                    value: template.id,
+                    label: `${template.name} (${template.eventType})`,
+                  }))}
+                  placeholder="Select a template"
+                  disabled={templates.length === 0}
+                />
+                {templates.length === 0 ? (
+                  <AdminHelp>No templates yet. Create one in Templates first.</AdminHelp>
+                ) : null}
+              </div>
 
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,_1fr)_440px]">
-          <FadeIn>
-            <Border className="p-8">
-              <h2 className="text-xl font-semibold text-neutral-950">Create new event portal</h2>
-              <p className="mt-2 text-sm text-neutral-600">
-                Creating an event will also create a Spotify playlist for song requests.
-              </p>
+              <div className="space-y-2">
+                <AdminLabel>Event name</AdminLabel>
+                <AdminInput
+                  type="text"
+                  value={eventName}
+                  onChange={(e) => setEventName(e.target.value)}
+                  placeholder="Sophia + Daniel Wedding"
+                  required
+                />
+              </div>
 
-              <form onSubmit={handleCreateEvent} className="mt-6 space-y-5">
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-neutral-950">
-                    Template
-                  </label>
-                  <select
-                    value={templateId}
-                    onChange={(e) => {
-                      const nextId = e.target.value
-                      setTemplateId(nextId)
-                      const template = templates.find((item) => item.id === nextId)
-                      if (template) setEventTypeId(template.eventTypeId)
-                    }}
-                    required
-                    className="w-full rounded-xl border border-neutral-300 bg-transparent px-4 py-3 text-base/6 text-neutral-950 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5"
-                  >
-                    {templates.map((template) => (
-                      <option key={template.id} value={template.id}>
-                        {template.name} ({template.eventType})
-                      </option>
-                    ))}
-                  </select>
-                  {templates.length === 0 ? (
-                    <p className="text-xs text-neutral-500">
-                      No templates yet. Create one in Templates first.
-                    </p>
-                  ) : null}
-                </div>
+              <div className="space-y-2">
+                <AdminLabel>Event type</AdminLabel>
+                <AdminSelectMenu
+                  value={eventTypeId || null}
+                  onChange={(nextId) => setEventTypeId(nextId)}
+                  options={eventTypes.map((eventType) => ({
+                    value: eventType.id,
+                    label: eventType.name,
+                  }))}
+                  placeholder="Select an event type"
+                  disabled={eventTypes.length === 0}
+                />
 
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-neutral-950">Event name</label>
-                  <input
+                <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,_1fr)_auto]">
+                  <AdminInput
                     type="text"
-                    value={eventName}
-                    onChange={(e) => setEventName(e.target.value)}
-                    placeholder="Sophia + Daniel Wedding"
-                    required
-                    className="w-full rounded-xl border border-neutral-300 bg-transparent px-4 py-3 text-base/6 text-neutral-950 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5"
+                    value={newEventTypeName}
+                    onChange={(e) => setNewEventTypeName(e.target.value)}
+                    placeholder="Create new event type"
                   />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-neutral-950">Event type</label>
-                  <select
-                    value={eventTypeId}
-                    onChange={(e) => setEventTypeId(e.target.value)}
-                    required
-                    className="w-full rounded-xl border border-neutral-300 bg-transparent px-4 py-3 text-base/6 text-neutral-950 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5"
+                  <AdminButton
+                    type="button"
+                    onClick={createEventType}
+                    disabled={eventTypeSaveState === 'saving' || newEventTypeName.trim().length === 0}
                   >
-                    {eventTypes.map((eventType) => (
-                      <option key={eventType.id} value={eventType.id}>
-                        {eventType.name}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="mt-3 flex gap-2">
-                    <input
-                      type="text"
-                      value={newEventTypeName}
-                      onChange={(e) => setNewEventTypeName(e.target.value)}
-                      placeholder="Create new event type"
-                      className="w-full rounded-xl border border-neutral-300 bg-transparent px-4 py-2 text-sm text-neutral-950 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5"
-                    />
-                    <Button
-                      type="button"
-                      onClick={createEventType}
-                      disabled={eventTypeSaveState === 'saving' || newEventTypeName.trim().length === 0}
-                    >
-                      {eventTypeSaveState === 'saving' ? 'Adding...' : 'Add'}
-                    </Button>
-                  </div>
-                  {eventTypeMessage ? (
-                    <p
-                      className={`text-xs ${
-                        eventTypeSaveState === 'error' ? 'text-red-700' : 'text-neutral-500'
-                      }`}
-                    >
-                      {eventTypeMessage}
-                    </p>
-                  ) : null}
+                    {eventTypeSaveState === 'saving' ? 'Adding...' : 'Add'}
+                  </AdminButton>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-neutral-950">
-                      Event date
-                    </label>
-                    <input
-                      type="date"
-                      value={eventDate}
-                      onChange={(e) => setEventDate(e.target.value)}
-                      required
-                      className="w-full rounded-xl border border-neutral-300 bg-transparent px-4 py-3 text-base/6 text-neutral-950 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-neutral-950">
-                      Start time
-                    </label>
-                    <input
-                      type="time"
-                      value={eventStartTime}
-                      onChange={(e) => setEventStartTime(e.target.value)}
-                      className="w-full rounded-xl border border-neutral-300 bg-transparent px-4 py-3 text-base/6 text-neutral-950 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-neutral-950">End time</label>
-                    <input
-                      type="time"
-                      value={eventEndTime}
-                      onChange={(e) => setEventEndTime(e.target.value)}
-                      className="w-full rounded-xl border border-neutral-300 bg-transparent px-4 py-3 text-base/6 text-neutral-950 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-neutral-950">
-                      Client name
-                    </label>
-                    <input
-                      type="text"
-                      value={clientName}
-                      onChange={(e) => setClientName(e.target.value)}
-                      placeholder="Jane Client"
-                      required
-                      className="w-full rounded-xl border border-neutral-300 bg-transparent px-4 py-3 text-base/6 text-neutral-950 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-neutral-950">
-                      Client email
-                    </label>
-                    <input
-                      type="email"
-                      value={clientEmail}
-                      onChange={(e) => setClientEmail(e.target.value)}
-                      placeholder="jane@email.com"
-                      className="w-full rounded-xl border border-neutral-300 bg-transparent px-4 py-3 text-base/6 text-neutral-950 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-neutral-950">
-                    Internal notes (optional)
-                  </label>
-                  <textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    rows={3}
-                    className="w-full rounded-xl border border-neutral-300 bg-transparent px-4 py-3 text-base/6 text-neutral-950 ring-4 ring-transparent transition focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5"
-                  />
-                </div>
-
-                {message ? (
-                  <div
-                    className={`rounded-lg border px-4 py-3 text-sm ${
-                      status === 'error'
-                        ? 'border-red-200 bg-red-50 text-red-700'
-                        : 'border-green-200 bg-green-50 text-green-700'
+                {eventTypeMessage ? (
+                  <p
+                    className={`text-xs ${
+                      eventTypeSaveState === 'error'
+                        ? 'text-[var(--admin-danger)]'
+                        : 'text-[var(--admin-muted)]'
                     }`}
                   >
-                    {message}
-                    {createdLink ? (
-                      <>
-                        {' '}
-                        <button
-                          type="button"
-                          onClick={() => copyLink(createdLink)}
-                          className="font-semibold underline"
-                        >
-                          {resolveUrl(createdLink)}
-                        </button>
-                      </>
-                    ) : null}
-                  </div>
+                    {eventTypeMessage}
+                  </p>
                 ) : null}
+              </div>
 
-                <Button
-                  type="submit"
-                  disabled={status === 'saving' || templates.length === 0 || eventTypes.length === 0}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="space-y-2">
+                  <AdminLabel>Event date</AdminLabel>
+                  <AdminInput
+                    type="date"
+                    value={eventDate}
+                    onChange={(e) => setEventDate(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <AdminLabel>Start time</AdminLabel>
+                  <AdminInput
+                    type="time"
+                    value={eventStartTime}
+                    onChange={(e) => setEventStartTime(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <AdminLabel>End time</AdminLabel>
+                  <AdminInput
+                    type="time"
+                    value={eventEndTime}
+                    onChange={(e) => setEventEndTime(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <AdminLabel>Venue name (provided by you)</AdminLabel>
+                <AdminInput
+                  type="text"
+                  value={venueName}
+                  onChange={(e) => setVenueName(e.target.value)}
+                  placeholder="Venue / location"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <AdminLabel>Organizer / coordinator name</AdminLabel>
+                  <AdminInput
+                    type="text"
+                    value={organizerName}
+                    onChange={(e) => setOrganizerName(e.target.value)}
+                    placeholder="Coordinator, planner, or main contact"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <AdminLabel>Organizer email</AdminLabel>
+                  <AdminInput
+                    type="email"
+                    value={organizerEmail}
+                    onChange={(e) => setOrganizerEmail(e.target.value)}
+                    placeholder="contact@email.com"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <AdminLabel>Organizer phone</AdminLabel>
+                <AdminInput
+                  type="tel"
+                  value={organizerPhone}
+                  onChange={(e) => setOrganizerPhone(e.target.value)}
+                  placeholder="(555) 555-5555"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <AdminLabel>Client name</AdminLabel>
+                  <AdminInput
+                    type="text"
+                    value={clientName}
+                    onChange={(e) => setClientName(e.target.value)}
+                    placeholder="Jane Client"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <AdminLabel>Client email</AdminLabel>
+                  <AdminInput
+                    type="email"
+                    value={clientEmail}
+                    onChange={(e) => setClientEmail(e.target.value)}
+                    placeholder="jane@email.com"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <AdminLabel>Portal access code (4–6 digits)</AdminLabel>
+                <AdminInput
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={accessPin}
+                  onChange={(e) => setAccessPin(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                  placeholder="e.g., 102526"
+                />
+                <AdminHelp>
+                  Clients must enter this code before viewing/submitting the form. Share it via text or email.
+                </AdminHelp>
+              </div>
+
+              <div className="space-y-2">
+                <AdminLabel>Internal notes (optional)</AdminLabel>
+                <AdminTextarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
+              </div>
+
+              {message ? (
+                <div
+                  className={`rounded-xl border px-4 py-3 text-sm ${
+                    status === 'error'
+                      ? 'border-[color-mix(in_oklab,var(--admin-danger)_35%,white)] bg-red-50 text-[var(--admin-danger)]'
+                      : 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                  }`}
                 >
-                  {status === 'saving' ? 'Creating...' : 'Create event portal'}
-                </Button>
-              </form>
-            </Border>
-          </FadeIn>
-
-          <FadeIn>
-            <Border className="p-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-neutral-950">All events</h3>
-                {loading ? <span className="text-xs text-neutral-500">Loading...</span> : null}
-              </div>
-
-              <div className="mt-4 space-y-4">
-                {!loading && events.length === 0 ? (
-                  <p className="text-sm text-neutral-600">No events yet.</p>
-                ) : null}
-
-                {events.map((event) => (
-                  <div key={event.id} className="rounded-xl border border-neutral-200 p-4">
-                    <p className="text-sm font-semibold text-neutral-950">{event.eventName}</p>
-                    <p className="text-xs text-neutral-500">
-                      {event.eventType} · {event.eventDate}
-                      {event.eventStartTime ? ` · ${event.eventStartTime}` : ''}
-                      {event.eventEndTime ? ` - ${event.eventEndTime}` : ''}
-                    </p>
-                    <p className="mt-2 text-xs text-neutral-500">
-                      Client: {event.clientName}
-                      {event.clientEmail ? ` · ${event.clientEmail}` : ''}
-                    </p>
-                    <p className="mt-1 text-xs text-neutral-500">
-                      Status: {EVENT_STATUS_OPTIONS.includes(event.status) ? event.status : 'sent'} ·{' '}
-                      {event.hasSubmission ? 'Submitted' : 'Waiting on client'}
-                    </p>
-                    <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                  {message}
+                  {createdLink ? (
+                    <>
+                      {' '}
                       <button
                         type="button"
-                        onClick={() => copyLink(event.clientUrl)}
-                        className="rounded-full border border-neutral-200 px-3 py-1 text-neutral-600 hover:text-neutral-950"
+                        onClick={() => copyLink(createdLink)}
+                        className="font-semibold underline underline-offset-2"
                       >
-                        Copy client link
+                        {resolveUrl(createdLink)}
                       </button>
-                      <a
-                        href={event.clientUrl}
-                        className="rounded-full border border-neutral-200 px-3 py-1 text-neutral-600 hover:text-neutral-950"
-                      >
-                        Open client form
-                      </a>
-                      <a
-                        href={`/event-portal/manage/events/${event.id}`}
-                        className="rounded-full border border-neutral-200 px-3 py-1 text-neutral-600 hover:text-neutral-950"
-                      >
-                        View digest
-                      </a>
-                      <button
-                        type="button"
-                        onClick={() => deleteEvent(event.id)}
-                        className="rounded-full border border-red-200 px-3 py-1 text-red-700 hover:text-red-900"
-                      >
-                        Delete
-                      </button>
+                    </>
+                  ) : null}
+                </div>
+              ) : null}
+
+              <AdminButton
+                type="submit"
+                disabled={status === 'saving' || templates.length === 0 || eventTypes.length === 0}
+              >
+                {status === 'saving' ? 'Creating...' : 'Create event portal'}
+              </AdminButton>
+            </form>
+          </AdminCardBody>
+        </AdminCard>
+
+        <AdminCard>
+          <AdminCardHeader className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-base font-bold text-[var(--admin-fg)]">All events</h3>
+              <p className="mt-1 text-sm text-[var(--admin-muted)]">
+                {events.length} total
+              </p>
+            </div>
+            {loading ? <span className="text-xs text-[var(--admin-muted)]">Loading...</span> : null}
+          </AdminCardHeader>
+          <AdminCardBody>
+            <div className="space-y-4">
+              {!loading && events.length === 0 ? (
+                <p className="text-sm text-[var(--admin-muted)]">No events yet.</p>
+              ) : null}
+
+              {events.map((event) => (
+                <div
+                  key={event.id}
+                  className="rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-surface)] px-4 py-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold text-[var(--admin-fg)]">
+                        {event.eventName}
+                      </p>
+                      <p className="mt-1 text-xs text-[var(--admin-muted)]">
+                        {event.eventType} · {event.eventDate}
+                        {event.eventStartTime ? ` · ${event.eventStartTime}` : ''}
+                        {event.eventEndTime ? ` - ${event.eventEndTime}` : ''}
+                      </p>
+                      {event.venueName ? (
+                        <p className="mt-2 text-xs text-[var(--admin-muted)]">
+                          Venue: {event.venueName}
+                        </p>
+                      ) : null}
+                      <p className="mt-2 text-xs text-[var(--admin-muted)]">
+                        Client: {event.clientName}
+                        {event.clientEmail ? ` · ${event.clientEmail}` : ''}
+                      </p>
                     </div>
+
+                    <span className="rounded-full border border-[var(--admin-border)] bg-[var(--admin-surface-2)] px-3 py-1 text-xs font-semibold text-[var(--admin-muted)]">
+                      {EVENT_STATUS_OPTIONS.includes(event.status) ? event.status : 'sent'} ·{' '}
+                      {event.hasSubmission ? 'Submitted' : 'Waiting'}
+                    </span>
                   </div>
-                ))}
-              </div>
-            </Border>
-          </FadeIn>
-        </div>
-      </Container>
-    </>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <AdminButton variant="secondary" size="sm" type="button" onClick={() => copyLink(event.clientUrl)}>
+                      Copy client link
+                    </AdminButton>
+                    <AdminButton variant="secondary" size="sm" href={event.clientUrl}>
+                      Open client form
+                    </AdminButton>
+                    <AdminButton variant="secondary" size="sm" href={`/event-portal/manage/events/${event.id}`}>
+                      View digest
+                    </AdminButton>
+                    <AdminButton variant="danger" size="sm" type="button" onClick={() => deleteEvent(event.id)}>
+                      Delete
+                    </AdminButton>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </AdminCardBody>
+        </AdminCard>
+      </div>
+    </div>
   )
 }
 

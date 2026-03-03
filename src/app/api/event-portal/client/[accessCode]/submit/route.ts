@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { normalizeSubmissionAnswers } from '@/lib/eventPortal'
 import { extractSpotifyTrackIdsFromAnswers } from '@/lib/eventPortalServer'
+import { hasValidPortalUnlock } from '@/lib/eventPortalAccess'
 import {
   addTracksToSpotifyPlaylist,
   getUserAccessToken,
@@ -9,6 +10,18 @@ import {
 } from '@/lib/spotify'
 
 const prisma = db as any
+
+function buildAdminPrefillAnswers(event: any) {
+  return {
+    venue_name: event?.venueName ?? null,
+    planner_name: event?.organizerName ?? null,
+    event_host: event?.organizerName ?? null,
+    host_email: event?.organizerEmail ?? null,
+    promoter_contact: event?.organizerName ?? null,
+    start_time: event?.eventStartTime ?? null,
+    end_time: event?.eventEndTime ?? null,
+  } as Record<string, unknown>
+}
 
 function toAnswerValue(answer: any) {
   const type = String(answer?.field?.type || '')
@@ -35,6 +48,7 @@ export async function POST(
     const event = await prisma.eventPortalEvent.findUnique({
       where: { accessCode: params.accessCode },
       include: {
+        eventType: true,
         template: {
           include: {
             fields: {
@@ -58,7 +72,19 @@ export async function POST(
       return NextResponse.json({ error: 'Event form not found' }, { status: 404 })
     }
 
+    const requiresPin = Boolean(event.accessPinHash)
+    const unlocked = requiresPin ? hasValidPortalUnlock(request, event.accessCode) : true
+    if (!unlocked) {
+      return NextResponse.json(
+        { error: 'Access code required', requiresPin: true },
+        { status: 401 }
+      )
+    }
+
     const body = await request.json().catch(() => ({}))
+    const clientAnswers = body?.answers && typeof body.answers === 'object' ? body.answers : {}
+    const prefilled = buildAdminPrefillAnswers(event)
+    const effectiveAnswers = { ...clientAnswers, ...prefilled }
     const normalized = normalizeSubmissionAnswers(
       Array.isArray(event.template?.fields)
         ? event.template.fields.map((field: any) => ({
@@ -70,7 +96,7 @@ export async function POST(
             options: field.options,
           }))
         : [],
-      body?.answers
+      effectiveAnswers
     )
 
     if (normalized.errors.length > 0) {
