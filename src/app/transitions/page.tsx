@@ -159,7 +159,12 @@ function PackagePopover({
   }, [isOpen])
 
   return (
-    <div className="group relative z-0 transition-all focus-within:z-10" ref={popoverRef}>
+    <div
+      className={`group relative transition-all focus-within:z-10 ${
+        isOpen ? 'z-20' : 'z-0'
+      }`}
+      ref={popoverRef}
+    >
       <button
         type="button"
         id={id}
@@ -190,7 +195,7 @@ function PackagePopover({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.15 }}
-          className="absolute z-10 mt-1 w-full rounded-xl bg-white p-2 text-sm/6 font-semibold text-neutral-950 shadow-lg outline-1 outline-neutral-900/5"
+          className="absolute z-30 mt-1 w-full rounded-xl bg-white p-2 text-sm/6 font-semibold text-neutral-950 shadow-lg outline-1 outline-neutral-900/5"
         >
           {options.map((option) => (
             <button
@@ -260,7 +265,12 @@ function MultiSelectPopover({
     : `Select ${label}`
 
   return (
-    <div className="group relative z-0 transition-all focus-within:z-10" ref={popoverRef}>
+    <div
+      className={`group relative transition-all focus-within:z-10 ${
+        isOpen ? 'z-20' : 'z-0'
+      }`}
+      ref={popoverRef}
+    >
       <button
         type="button"
         id={id}
@@ -291,7 +301,7 @@ function MultiSelectPopover({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.15 }}
-          className="absolute z-10 mt-1 w-full rounded-xl bg-white p-2 text-sm/6 font-semibold text-neutral-950 shadow-lg outline-1 outline-neutral-900/5 max-h-80 overflow-y-auto"
+          className="absolute z-30 mt-1 w-full rounded-xl bg-white p-2 text-sm/6 font-semibold text-neutral-950 shadow-lg outline-1 outline-neutral-900/5 max-h-80 overflow-y-auto"
         >
           {options.map((option) => {
             const isSelected = value.includes(option.value)
