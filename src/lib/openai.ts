@@ -1,4 +1,5 @@
 import OpenAI from 'openai'
+import { TRANSITION_TYPES, type TransitionType } from '@/lib/transitions'
 
 let _openai: OpenAI | null = null
 function getOpenAIClient(): OpenAI {
@@ -13,6 +14,65 @@ function getOpenAIClient(): OpenAI {
 
   _openai = new OpenAI({ apiKey })
   return _openai
+}
+
+export type AIChatMessage = {
+  role: 'system' | 'user' | 'assistant'
+  content: string
+}
+
+export async function runTextCompletion({
+  messages,
+  temperature = 0.7,
+  maxTokens = 1000,
+  fallback = '',
+}: {
+  messages: AIChatMessage[]
+  temperature?: number
+  maxTokens?: number
+  fallback?: string
+}): Promise<string> {
+  const openai = getOpenAIClient()
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4',
+    messages,
+    temperature,
+    max_tokens: maxTokens,
+  })
+
+  return completion.choices[0]?.message?.content?.trim() || fallback
+}
+
+export async function runJsonCompletion<T>({
+  messages,
+  temperature = 0.7,
+  maxTokens = 1000,
+  fallback,
+}: {
+  messages: AIChatMessage[]
+  temperature?: number
+  maxTokens?: number
+  fallback: T
+}): Promise<T> {
+  const content = await runTextCompletion({
+    messages,
+    temperature,
+    maxTokens,
+    fallback: JSON.stringify(fallback),
+  })
+
+  try {
+    return JSON.parse(stripJsonCodeFence(content)) as T
+  } catch {
+    return fallback
+  }
+}
+
+function stripJsonCodeFence(content: string) {
+  return content
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim()
 }
 
 export interface PlaylistContext {
@@ -300,6 +360,25 @@ export interface TransitionNotesContext {
   }>
 }
 
+export interface SpotifyTrackContext {
+  name: string
+  artist: string
+  album?: string
+  duration?: number
+  externalUrl?: string
+}
+
+export interface TransitionIdea {
+  title: string
+  summary: string
+  tracks: string[]
+  transitionTypes: TransitionType[]
+  difficulty: 'easy' | 'medium' | 'advanced'
+  whyItWorks: string
+  steps: string[]
+  notes: string
+}
+
 export async function cleanTransitionNotes(
   notes: string,
   context: TransitionNotesContext = {}
@@ -321,18 +400,18 @@ export async function cleanTransitionNotes(
     )
   }
 
-  const openai = getOpenAIClient()
-  const completion = await openai.chat.completions.create({
-    model: 'gpt-4',
+  return runTextCompletion({
     messages: [
       {
         role: 'system',
-        content: `You clean up DJ transition notes so they are easy to read later.
+        content: `You rewrite DJ transition notes so another DJ can understand and repeat the transition later.
 Preserve the user's meaning, track names, cue points, timestamps, BPM/key details, transition steps, stem references, and DJ shorthand when it matters.
 Fix spelling, punctuation, capitalization, and sentence structure.
-Expand shorthand only when the intended meaning is clear.
-Use concise bullets or short paragraphs if that improves readability.
-Do not invent new details or add commentary.
+Expand shorthand into clear, beginner-friendly steps when the intended meaning is clear.
+If a quick note implies an action, explain the action in plain language without inventing new technical details.
+Use concise bullets, numbered steps, or short paragraphs if that improves readability.
+Keep the output practical: what to listen for, when to start the next track, what controls/stems/EQ/filter moves to use, and when to complete the blend.
+Do not invent new details, cue points, BPMs, or song facts that were not provided.
 Return only the cleaned notes.`,
       },
       {
@@ -346,10 +425,109 @@ Return only the cleaned notes.`,
       },
     ],
     temperature: 0.2,
-    max_tokens: 600,
+    maxTokens: 800,
+    fallback: trimmedNotes,
+  })
+}
+
+export async function generateTransitionIdeas({
+  prompt,
+  spotifyTracks = [],
+}: {
+  prompt: string
+  spotifyTracks?: SpotifyTrackContext[]
+}): Promise<TransitionIdea[]> {
+  const trimmedPrompt = prompt.trim()
+  if (!trimmedPrompt) {
+    return []
+  }
+
+  const spotifyContext = spotifyTracks.length
+    ? `Spotify search context:\n${spotifyTracks
+        .map((track, index) => {
+          const details = [
+            track.album ? `album: ${track.album}` : null,
+            track.duration ? `duration: ${Math.round(track.duration / 1000)}s` : null,
+          ]
+            .filter(Boolean)
+            .join(', ')
+
+          return `${index + 1}. ${track.name} - ${track.artist}${details ? ` (${details})` : ''}`
+        })
+        .join('\n')}`
+    : 'No Spotify search context was available. Use general DJ/music knowledge and avoid claiming that a song is currently trending.'
+
+  const response = await runJsonCompletion<{ ideas: Partial<TransitionIdea>[] }>({
+    messages: [
+      {
+        role: 'system',
+        content: `You are a working DJ assistant that creates practical transition ideas.
+Generate transition concepts that a DJ can test in Rekordbox, Serato, Traktor, or similar software.
+Use Spotify context when it is supplied, but do not claim access to live Spotify charts or current popularity unless that context explicitly proves it.
+Prefer realistic transitions: compatible energy, genre, lyric theme, phrasing, BPM feel, key feel, drums, drops, breakdowns, or wordplay.
+Return only valid JSON shaped exactly as:
+{
+  "ideas": [
+    {
+      "title": "short transition name",
+      "summary": "one sentence overview",
+      "tracks": ["Song - Artist", "Song - Artist"],
+      "transitionTypes": ["beat_match"],
+      "difficulty": "easy",
+      "whyItWorks": "why this pairing or technique makes sense",
+      "steps": ["clear step 1", "clear step 2"],
+      "notes": "expanded notes that can be pasted into the transition Notes field"
+    }
+  ]
+}
+Use 3 to 5 ideas. Difficulty must be easy, medium, or advanced.
+Allowed transitionTypes values: ${TRANSITION_TYPES.join(', ')}.`,
+      },
+      {
+        role: 'user',
+        content: `DJ prompt:\n${trimmedPrompt}\n\n${spotifyContext}`,
+      },
+    ],
+    temperature: 0.8,
+    maxTokens: 1800,
+    fallback: { ideas: [] },
   })
 
-  return completion.choices[0]?.message?.content?.trim() || trimmedNotes
+  return normalizeTransitionIdeas(response.ideas)
+}
+
+function normalizeTransitionIdeas(ideas: Partial<TransitionIdea>[] | undefined): TransitionIdea[] {
+  if (!Array.isArray(ideas)) {
+    return []
+  }
+
+  return ideas
+    .map((idea) => {
+      const transitionTypes = Array.isArray(idea.transitionTypes)
+        ? idea.transitionTypes.filter((type): type is TransitionType =>
+            TRANSITION_TYPES.includes(type as TransitionType)
+          )
+        : []
+      const difficulty = ['easy', 'medium', 'advanced'].includes(String(idea.difficulty))
+        ? idea.difficulty
+        : 'medium'
+
+      return {
+        title: typeof idea.title === 'string' && idea.title.trim() ? idea.title.trim() : 'Transition idea',
+        summary: typeof idea.summary === 'string' ? idea.summary.trim() : '',
+        tracks: Array.isArray(idea.tracks)
+          ? idea.tracks.filter((track): track is string => typeof track === 'string')
+          : [],
+        transitionTypes: transitionTypes.length ? transitionTypes : ['other'],
+        difficulty,
+        whyItWorks: typeof idea.whyItWorks === 'string' ? idea.whyItWorks.trim() : '',
+        steps: Array.isArray(idea.steps)
+          ? idea.steps.filter((step): step is string => typeof step === 'string')
+          : [],
+        notes: typeof idea.notes === 'string' ? idea.notes.trim() : '',
+      }
+    })
+    .slice(0, 5)
 }
 
 
