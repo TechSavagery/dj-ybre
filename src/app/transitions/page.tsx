@@ -99,8 +99,12 @@ function TextareaInput({
   label,
   value,
   placeholder,
+  action,
   ...props
-}: React.ComponentPropsWithoutRef<'textarea'> & { label: string }) {
+}: React.ComponentPropsWithoutRef<'textarea'> & {
+  label: string
+  action?: React.ReactNode
+}) {
   let id = useId()
   const hasValue = value && String(value).length > 0
   const showPlaceholder = placeholder && !hasValue
@@ -121,6 +125,7 @@ function TextareaInput({
       >
         {label}
       </label>
+      {action ? <div className="absolute right-6 top-4">{action}</div> : null}
     </div>
   )
 }
@@ -553,6 +558,7 @@ export default function TransitionsPage() {
   const [stemsNotes, setStemsNotes] = useState('')
   const [tags, setTags] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isCleaningNotes, setIsCleaningNotes] = useState(false)
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState('')
   const [detailsLoadingByTrackId, setDetailsLoadingByTrackId] = useState<Record<string, boolean>>({})
@@ -631,6 +637,51 @@ export default function TransitionsPage() {
     // Enrich selected track with audio features/genres for pills UI
     enrichTrackDetails(track.id)
   }, [enrichTrackDetails])
+
+  const handleCleanNotes = async () => {
+    const originalNotes = notes.trim()
+
+    if (!originalNotes) {
+      setSubmitStatus('error')
+      setErrorMessage('Add notes before cleaning them up')
+      return
+    }
+
+    setIsCleaningNotes(true)
+    setSubmitStatus('idle')
+    setErrorMessage('')
+
+    try {
+      const response = await fetch('/api/transitions/clean-notes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          notes: originalNotes,
+          transitionTypes,
+          tracks: selectedTracks.map((track) => ({
+            name: track.name,
+            artist: track.artist,
+            position: track.position,
+          })),
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to clean up notes')
+      }
+
+      setNotes(data.notes)
+    } catch (error) {
+      setSubmitStatus('error')
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to clean up notes')
+    } finally {
+      setIsCleaningNotes(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -793,6 +844,16 @@ export default function TransitionsPage() {
                   value={notes}
                   placeholder="Tutorial/notes about the transition"
                   onChange={(e) => setNotes(e.target.value)}
+                  action={
+                    <button
+                      type="button"
+                      onClick={handleCleanNotes}
+                      disabled={isCleaningNotes || notes.trim().length === 0}
+                      className="rounded-full bg-neutral-950 px-3 py-1 text-xs font-semibold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isCleaningNotes ? 'Cleaning...' : 'Clean up notes'}
+                    </button>
+                  }
                 />
 
                 <TextareaInput

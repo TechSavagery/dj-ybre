@@ -291,6 +291,67 @@ Write 2-3 sentences that capture the vibe, era, and personal touches. Make it en
   return completion.choices[0]?.message?.content || 'A carefully curated playlist for your special event.'
 }
 
+export interface TransitionNotesContext {
+  transitionTypes?: string[]
+  tracks?: Array<{
+    name: string
+    artist: string
+    position: number
+  }>
+}
+
+export async function cleanTransitionNotes(
+  notes: string,
+  context: TransitionNotesContext = {}
+): Promise<string> {
+  const trimmedNotes = notes.trim()
+  if (!trimmedNotes) {
+    return ''
+  }
+
+  const contextLines: string[] = []
+  if (context.transitionTypes?.length) {
+    contextLines.push(`Transition types: ${context.transitionTypes.join(', ')}`)
+  }
+  if (context.tracks?.length) {
+    contextLines.push(
+      `Tracks:\n${context.tracks
+        .map((track) => `${track.position}. ${track.name} - ${track.artist}`)
+        .join('\n')}`
+    )
+  }
+
+  const openai = getOpenAIClient()
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4',
+    messages: [
+      {
+        role: 'system',
+        content: `You clean up DJ transition notes so they are easy to read later.
+Preserve the user's meaning, track names, cue points, timestamps, BPM/key details, transition steps, stem references, and DJ shorthand when it matters.
+Fix spelling, punctuation, capitalization, and sentence structure.
+Expand shorthand only when the intended meaning is clear.
+Use concise bullets or short paragraphs if that improves readability.
+Do not invent new details or add commentary.
+Return only the cleaned notes.`,
+      },
+      {
+        role: 'user',
+        content: [
+          contextLines.length ? `Context:\n${contextLines.join('\n\n')}` : null,
+          `Notes:\n${trimmedNotes}`,
+        ]
+          .filter(Boolean)
+          .join('\n\n'),
+      },
+    ],
+    temperature: 0.2,
+    max_tokens: 600,
+  })
+
+  return completion.choices[0]?.message?.content?.trim() || trimmedNotes
+}
+
 
 
 
