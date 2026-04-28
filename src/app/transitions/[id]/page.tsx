@@ -5,6 +5,7 @@ import { PageIntro } from '@/components/PageIntro'
 import { Border } from '@/components/Border'
 import { Button } from '@/components/Button'
 import { SpotifyPlayOverlayImage } from '@/components/SpotifyPlayOverlayImage'
+import { TransitionNotesCleanup } from '@/components/TransitionNotesCleanup'
 import { db } from '@/lib/db'
 import {
   getReccoBeatsAudioFeaturesByTrackIds,
@@ -252,20 +253,18 @@ export default async function TransitionDetailPage({
               </Border>
             </FadeIn>
 
-            {transition.notes && (
-              <FadeIn>
-                <Border className="p-8">
-                  <h2 className="font-display text-xl font-semibold text-neutral-950 mb-4">
-                    Notes
-                  </h2>
-                  <div className="prose prose-neutral max-w-none">
-                    <p className="text-base text-neutral-600 whitespace-pre-wrap">
-                      {transition.notes}
-                    </p>
-                  </div>
-                </Border>
-              </FadeIn>
-            )}
+            <FadeIn>
+              <TransitionNotesCleanup
+                transitionId={transition.id}
+                initialNotes={transition.notes || ''}
+                transitionTypes={transition.type}
+                tracks={transition.tracks.map((track: any) => ({
+                  name: track.name,
+                  artist: track.artist,
+                  position: track.position,
+                }))}
+              />
+            </FadeIn>
 
             {transition.stemsNotes && (
               <FadeIn>

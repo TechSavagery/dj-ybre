@@ -1,6 +1,15 @@
 import OpenAI from 'openai'
 import { TRANSITION_TYPES, type TransitionType } from '@/lib/transitions'
 
+const DEFAULT_OPENAI_MODEL = 'gpt-4o-mini'
+
+export class TransitionIdeaGenerationError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'TransitionIdeaGenerationError'
+  }
+}
+
 let _openai: OpenAI | null = null
 function getOpenAIClient(): OpenAI {
   if (_openai) return _openai
@@ -34,7 +43,7 @@ export async function runTextCompletion({
 }): Promise<string> {
   const openai = getOpenAIClient()
   const completion = await openai.chat.completions.create({
-    model: 'gpt-4',
+    model: process.env.OPENAI_MODEL || DEFAULT_OPENAI_MODEL,
     messages,
     temperature,
     max_tokens: maxTokens,
@@ -459,11 +468,13 @@ export async function generateTransitionIdeas({
         .join('\n')}`
     : 'No Spotify search context was available. Use general DJ/music knowledge and avoid claiming that a song is currently trending.'
 
-  const response = await runJsonCompletion<{ ideas: Partial<TransitionIdea>[] }>({
-    messages: [
-      {
-        role: 'system',
-        content: `You are a working DJ assistant that creates practical transition ideas.
+  let response: { ideas: Partial<TransitionIdea>[] }
+  try {
+    response = await runJsonCompletion<{ ideas: Partial<TransitionIdea>[] }>({
+      messages: [
+        {
+          role: 'system',
+          content: `You are a working DJ assistant that creates practical transition ideas.
 Generate transition concepts that a DJ can test in Rekordbox, Serato, Traktor, or similar software.
 Use Spotify context when it is supplied, but do not claim access to live Spotify charts or current popularity unless that context explicitly proves it.
 Prefer realistic transitions: compatible energy, genre, lyric theme, phrasing, BPM feel, key feel, drums, drops, breakdowns, or wordplay.
@@ -484,18 +495,31 @@ Return only valid JSON shaped exactly as:
 }
 Use 3 to 5 ideas. Difficulty must be easy, medium, or advanced.
 Allowed transitionTypes values: ${TRANSITION_TYPES.join(', ')}.`,
-      },
-      {
-        role: 'user',
-        content: `DJ prompt:\n${trimmedPrompt}\n\n${spotifyContext}`,
-      },
-    ],
-    temperature: 0.8,
-    maxTokens: 1800,
-    fallback: { ideas: [] },
-  })
+        },
+        {
+          role: 'user',
+          content: `DJ prompt:\n${trimmedPrompt}\n\n${spotifyContext}`,
+        },
+      ],
+      temperature: 0.8,
+      maxTokens: 1800,
+      fallback: { ideas: [] },
+    })
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('OPENAI_API_KEY')) {
+      throw new TransitionIdeaGenerationError('OpenAI is not configured. Add OPENAI_API_KEY to generate transition ideas.')
+    }
 
-  return normalizeTransitionIdeas(response.ideas)
+    console.error('OpenAI transition idea generation failed:', error)
+    throw new TransitionIdeaGenerationError('OpenAI could not generate transition ideas right now. Check the API key, model access, and quota.')
+  }
+
+  const ideas = normalizeTransitionIdeas(response.ideas)
+  if (ideas.length === 0) {
+    throw new TransitionIdeaGenerationError('OpenAI returned no usable transition ideas. Try a more specific prompt with at least one song, artist, genre, or crowd moment.')
+  }
+
+  return ideas
 }
 
 function normalizeTransitionIdeas(ideas: Partial<TransitionIdea>[] | undefined): TransitionIdea[] {

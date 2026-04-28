@@ -58,25 +58,6 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const cookieStore = await cookies()
-    const cookieToken = cookieStore.get('spotify_access_token')?.value
-
-    // Get access token - tries cookie first, then refresh token from env
-    // For public endpoints (tracks, audio features), prefer client credentials
-    let accessToken: string
-    try {
-      // Use client credentials for public track data (more reliable than refresh tokens)
-      accessToken = await getAccessTokenForApi(cookieToken, true)
-    } catch (error) {
-      return NextResponse.json(
-        { 
-          error: 'Not authenticated with Spotify',
-          details: error instanceof Error ? error.message : 'Failed to get access token'
-        },
-        { status: 401 }
-      )
-    }
-
     const body = await request.json()
     const {
       name,
@@ -104,6 +85,23 @@ export async function PUT(
     // If tracks are being updated, validate and fetch metadata
     let updatedTracks = existing.tracks
     if (tracks) {
+      const cookieStore = await cookies()
+      const cookieToken = cookieStore.get('spotify_access_token')?.value
+
+      // Get access token only when tracks are changing and Spotify metadata is needed.
+      let accessToken: string
+      try {
+        accessToken = await getAccessTokenForApi(cookieToken, true)
+      } catch (error) {
+        return NextResponse.json(
+          { 
+            error: 'Not authenticated with Spotify',
+            details: error instanceof Error ? error.message : 'Failed to get access token'
+          },
+          { status: 401 }
+        )
+      }
+
       // Use existing type if not provided, normalize to array
       const typeForValidation = type || existing.type
       const validation = validateTransitionData({ tracks, type: typeForValidation })

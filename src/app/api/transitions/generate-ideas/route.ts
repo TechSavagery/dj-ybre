@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import {
+  TransitionIdeaGenerationError,
   generateTransitionIdeas,
   type SpotifyTrackContext,
 } from '@/lib/openai'
@@ -39,10 +40,22 @@ export async function POST(request: NextRequest) {
       console.warn('Transition idea Spotify context unavailable:', spotifyError)
     }
 
-    const ideas = await generateTransitionIdeas({
-      prompt,
-      spotifyTracks,
-    })
+    let ideas
+    try {
+      ideas = await generateTransitionIdeas({
+        prompt,
+        spotifyTracks,
+      })
+    } catch (error) {
+      if (error instanceof TransitionIdeaGenerationError) {
+        return NextResponse.json(
+          { error: error.message },
+          { status: 502 }
+        )
+      }
+
+      throw error
+    }
 
     return NextResponse.json({
       ideas,
