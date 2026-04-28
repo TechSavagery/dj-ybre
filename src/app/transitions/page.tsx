@@ -64,6 +64,23 @@ interface SelectedTrack extends Track {
   reccoBeatsId?: string | null
 }
 
+interface TransitionIdea {
+  title: string
+  summary: string
+  tracks: string[]
+  transitionTypes: string[]
+  difficulty: 'easy' | 'medium' | 'advanced'
+  whyItWorks: string
+  steps: string[]
+  notes: string
+}
+
+const TRANSITION_IDEA_PROMPT_EXAMPLES = [
+  'Possible transitions for Ella Langley - choosing Texas',
+  'Hot country songs right now that could transition into Morgan Wallen',
+  'Clean wedding transition from 2000s throwbacks into current pop',
+]
+
 function TextInput({
   label,
   type = 'text',
@@ -99,8 +116,12 @@ function TextareaInput({
   label,
   value,
   placeholder,
+  action,
   ...props
-}: React.ComponentPropsWithoutRef<'textarea'> & { label: string }) {
+}: React.ComponentPropsWithoutRef<'textarea'> & {
+  label: string
+  action?: React.ReactNode
+}) {
   let id = useId()
   const hasValue = value && String(value).length > 0
   const showPlaceholder = placeholder && !hasValue
@@ -121,6 +142,7 @@ function TextareaInput({
       >
         {label}
       </label>
+      {action ? <div className="absolute right-6 top-4">{action}</div> : null}
     </div>
   )
 }
@@ -563,6 +585,11 @@ export default function TransitionsPage() {
   const [stemsNotes, setStemsNotes] = useState('')
   const [tags, setTags] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isCleaningNotes, setIsCleaningNotes] = useState(false)
+  const [transitionIdeaPrompt, setTransitionIdeaPrompt] = useState('')
+  const [transitionIdeas, setTransitionIdeas] = useState<TransitionIdea[]>([])
+  const [isGeneratingIdeas, setIsGeneratingIdeas] = useState(false)
+  const [spotifyContextUsed, setSpotifyContextUsed] = useState<boolean | null>(null)
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState('')
   const [detailsLoadingByTrackId, setDetailsLoadingByTrackId] = useState<Record<string, boolean>>({})
@@ -641,6 +668,106 @@ export default function TransitionsPage() {
     // Enrich selected track with audio features/genres for pills UI
     enrichTrackDetails(track.id)
   }, [enrichTrackDetails])
+
+  const handleCleanNotes = async () => {
+    const originalNotes = notes.trim()
+
+    if (!originalNotes) {
+      setSubmitStatus('error')
+      setErrorMessage('Add notes before cleaning them up')
+      return
+    }
+
+    setIsCleaningNotes(true)
+    setSubmitStatus('idle')
+    setErrorMessage('')
+
+    try {
+      const response = await fetch('/api/transitions/clean-notes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          notes: originalNotes,
+          transitionTypes,
+          tracks: selectedTracks.map((track) => ({
+            name: track.name,
+            artist: track.artist,
+            position: track.position,
+          })),
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to clean up notes')
+      }
+
+      setNotes(data.notes)
+    } catch (error) {
+      setSubmitStatus('error')
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to clean up notes')
+    } finally {
+      setIsCleaningNotes(false)
+    }
+  }
+
+  const handleGenerateTransitionIdeas = async () => {
+    const prompt = transitionIdeaPrompt.trim()
+
+    if (!prompt) {
+      setSubmitStatus('error')
+      setErrorMessage('Add a prompt before generating transition ideas')
+      return
+    }
+
+    setIsGeneratingIdeas(true)
+    setSubmitStatus('idle')
+    setErrorMessage('')
+    setSpotifyContextUsed(null)
+
+    try {
+      const response = await fetch('/api/transitions/generate-ideas', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to generate transition ideas')
+      }
+
+      setTransitionIdeas(Array.isArray(data.ideas) ? data.ideas : [])
+      setSpotifyContextUsed(Boolean(data.spotifyContextUsed))
+    } catch (error) {
+      setSubmitStatus('error')
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to generate transition ideas')
+    } finally {
+      setIsGeneratingIdeas(false)
+    }
+  }
+
+  const handleUseTransitionIdea = (idea: TransitionIdea) => {
+    const validTypes = idea.transitionTypes.filter((type) =>
+      TRANSITION_TYPES.includes(type as (typeof TRANSITION_TYPES)[number])
+    )
+
+    if (!name) {
+      setName(idea.title)
+    }
+
+    if (validTypes.length > 0) {
+      setTransitionTypes(validTypes)
+    }
+
+    setNotes(idea.notes || idea.steps.join('\n'))
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -755,6 +882,118 @@ export default function TransitionsPage() {
               <h2 className="font-display text-base font-semibold text-neutral-950">
                 Transition Details
               </h2>
+              <div className="mt-6 rounded-2xl border border-neutral-300 bg-white/50 p-6">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <h3 className="font-display text-base font-semibold text-neutral-950">
+                      AI transition ideas
+                    </h3>
+                    <p className="mt-1 text-sm text-neutral-600">
+                      Describe a song, artist, vibe, crowd, or moment and generate transition concepts.
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-600">
+                    Uses AI + Spotify search context
+                  </span>
+                </div>
+
+                <div className="mt-4">
+                  <label
+                    htmlFor="transitionIdeaPrompt"
+                    className="text-sm font-semibold text-neutral-950"
+                  >
+                    Prompt
+                  </label>
+                  <textarea
+                    id="transitionIdeaPrompt"
+                    value={transitionIdeaPrompt}
+                    onChange={(e) => setTransitionIdeaPrompt(e.target.value)}
+                    rows={3}
+                    placeholder="Example: possible transitions for Ella Langley - choosing Texas"
+                    className="mt-2 block w-full rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm text-neutral-950 ring-4 ring-transparent transition placeholder:text-neutral-400 focus:border-neutral-950 focus:outline-none focus:ring-neutral-950/5"
+                  />
+                </div>
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {TRANSITION_IDEA_PROMPT_EXAMPLES.map((example) => (
+                    <button
+                      key={example}
+                      type="button"
+                      onClick={() => setTransitionIdeaPrompt(example)}
+                      className="rounded-full border border-neutral-300 px-3 py-1 text-xs font-semibold text-neutral-700 transition hover:border-neutral-950 hover:text-neutral-950"
+                    >
+                      {example}
+                    </button>
+                  ))}
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={handleGenerateTransitionIdeas}
+                  disabled={isGeneratingIdeas || transitionIdeaPrompt.trim().length === 0}
+                  className="mt-4"
+                >
+                  {isGeneratingIdeas ? 'Generating...' : 'Generate ideas'}
+                </Button>
+
+                {spotifyContextUsed !== null ? (
+                  <p className="mt-3 text-xs text-neutral-500">
+                    {spotifyContextUsed
+                      ? 'Spotify search results were used as context. This is not a live chart feed.'
+                      : 'Spotify context was not available, so the ideas use general DJ/music knowledge.'}
+                  </p>
+                ) : null}
+
+                {transitionIdeas.length > 0 ? (
+                  <div className="mt-6 grid gap-4">
+                    {transitionIdeas.map((idea, index) => (
+                      <div
+                        key={`${idea.title}-${index}`}
+                        className="rounded-xl border border-neutral-200 bg-white p-4"
+                      >
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h4 className="font-semibold text-neutral-950">{idea.title}</h4>
+                              <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-semibold capitalize text-neutral-600">
+                                {idea.difficulty}
+                              </span>
+                            </div>
+                            <p className="mt-1 text-sm text-neutral-600">{idea.summary}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleUseTransitionIdea(idea)}
+                            className="rounded-full bg-neutral-950 px-3 py-1 text-xs font-semibold text-white transition hover:bg-neutral-800"
+                          >
+                            Use idea
+                          </button>
+                        </div>
+
+                        {idea.tracks.length > 0 ? (
+                          <p className="mt-3 text-sm font-semibold text-neutral-950">
+                            Tracks: {idea.tracks.join(' -> ')}
+                          </p>
+                        ) : null}
+
+                        <p className="mt-3 text-sm text-neutral-600">
+                          <span className="font-semibold text-neutral-950">Why it works:</span>{' '}
+                          {idea.whyItWorks}
+                        </p>
+
+                        {idea.steps.length > 0 ? (
+                          <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-neutral-600">
+                            {idea.steps.map((step, stepIndex) => (
+                              <li key={stepIndex}>{step}</li>
+                            ))}
+                          </ol>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+
               <div className="isolate mt-6 -space-y-px rounded-2xl bg-white/50">
                 {/* Track Selection */}
                 {Array.from({ length: trackSlots }, (_, i) => i + 1).map((position) => (
@@ -803,6 +1042,16 @@ export default function TransitionsPage() {
                   value={notes}
                   placeholder="Tutorial/notes about the transition"
                   onChange={(e) => setNotes(e.target.value)}
+                  action={
+                    <button
+                      type="button"
+                      onClick={handleCleanNotes}
+                      disabled={isCleaningNotes || notes.trim().length === 0}
+                      className="rounded-full bg-neutral-950 px-3 py-1 text-xs font-semibold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isCleaningNotes ? 'Cleaning...' : 'Clean up notes'}
+                    </button>
+                  }
                 />
 
                 <TextareaInput
