@@ -1,0 +1,283 @@
+import { NextRequest, NextResponse } from 'next/server'
+import crypto from 'crypto'
+import { db } from '@/lib/db'
+import { createSpotifyPlaylist, getUserAccessToken } from '@/lib/spotify'
+import { ensureEventPortalDefaults, mapEventSummary } from '@/lib/eventPortalServer'
+import { hashPortalPin, isValidPortalPin, normalizePortalPin } from '@/lib/eventPortalAccess'
+
+const prisma = db as any
+
+async function resolveEventType(input: {
+  eventTypeId?: unknown
+  eventTypeName?: unknown
+}) {
+  const eventTypeId =
+    typeof input.eventTypeId === 'string' && input.eventTypeId.trim().length > 0
+      ? input.eventTypeId.trim()
+      : ''
+  const eventTypeName =
+    typeof input.eventTypeName === 'string' && input.eventTypeName.trim().length > 0
+      ? input.eventTypeName.trim()
+      : ''
+
+  if (eventTypeId) {
+    return prisma.eventPortalEventType.findUnique({
+      where: { id: eventTypeId },
+    })
+  }
+
+  if (eventTypeName) {
+    return prisma.eventPortalEventType.findFirst({
+      where: {
+        name: {
+          equals: eventTypeName,
+          mode: 'insensitive',
+        },
+      },
+    })
+  }
+
+  return null
+}
+
+function formatLocalDate(date: Date) {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+async function generateUniqueAccessCode() {
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const candidate = crypto.randomBytes(10).toString('hex')
+    const existing = await prisma.eventPortalEvent.findUnique({
+      where: { accessCode: candidate },
+      select: { id: true },
+    })
+    if (!existing) {
+      return candidate
+    }
+  }
+  throw new Error('Failed to generate a unique access code')
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    await ensureEventPortalDefaults()
+
+    const url = new URL(request.url)
+    const includePast = url.searchParams.get('includePast') === '1'
+    const today = formatLocalDate(new Date())
+
+    const events = await prisma.eventPortalEvent.findMany({
+      where: includePast
+        ? undefined
+        : {
+            eventDate: { gte: today },
+          },
+      include: {
+        eventType: true,
+        template: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        submission: {
+          select: {
+            id: true,
+            submittedAt: true,
+          },
+        },
+      },
+      orderBy: includePast
+        ? [{ createdAt: 'desc' }]
+        : [{ eventDate: 'asc' }, { createdAt: 'desc' }],
+    })
+
+    return NextResponse.json({
+      events: events.map((event: any) => mapEventSummary(event)),
+    })
+  } catch (error) {
+    console.error('Error fetching event portal events:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch event portal events' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json().catch(() => ({}))
+    const templateId = typeof body?.templateId === 'string' ? body.templateId.trim() : ''
+    const eventName = typeof body?.eventName === 'string' ? body.eventName.trim() : ''
+    const eventDate = typeof body?.eventDate === 'string' ? body.eventDate.trim() : ''
+    const clientName = typeof body?.clientName === 'string' ? body.clientName.trim() : ''
+    const clientEmail =
+      typeof body?.clientEmail === 'string' && body.clientEmail.trim().length > 0
+        ? body.clientEmail.trim()
+        : null
+    const notes =
+      typeof body?.notes === 'string' && body.notes.trim().length > 0
+        ? body.notes.trim()
+        : null
+    const eventStartTime =
+      typeof body?.eventStartTime === 'string' && body.eventStartTime.trim().length > 0
+        ? body.eventStartTime.trim()
+        : null
+    const eventEndTime =
+      typeof body?.eventEndTime === 'string' && body.eventEndTime.trim().length > 0
+        ? body.eventEndTime.trim()
+        : null
+
+    const venueName =
+      typeof body?.venueName === 'string' && body.venueName.trim().length > 0
+        ? body.venueName.trim()
+        : null
+    const organizerName =
+      typeof body?.organizerName === 'string' && body.organizerName.trim().length > 0
+        ? body.organizerName.trim()
+        : null
+    const organizerEmail =
+      typeof body?.organizerEmail === 'string' && body.organizerEmail.trim().length > 0
+        ? body.organizerEmail.trim()
+        : null
+    const organizerPhone =
+      typeof body?.organizerPhone === 'string' && body.organizerPhone.trim().length > 0
+        ? body.organizerPhone.trim()
+        : null
+
+    const accessPinRaw =
+      body && Object.prototype.hasOwnProperty.call(body, 'accessPin')
+        ? normalizePortalPin(body.accessPin)
+        : ''
+    const accessPin = accessPinRaw ? accessPinRaw : null
+    const accessPinHash = accessPin
+      ? isValidPortalPin(accessPin)
+        ? hashPortalPin(accessPin)
+        : null
+      : null
+
+    if (!templateId || !eventName || !eventDate || !clientName) {
+      return NextResponse.json(
+        { error: 'templateId, eventName, eventDate, and clientName are required' },
+        { status: 400 }
+      )
+    }
+
+    if (accessPin && !isValidPortalPin(accessPin)) {
+      return NextResponse.json(
+        { error: 'accessPin must be a 4 to 6 digit code' },
+        { status: 400 }
+      )
+    }
+
+    const template = await prisma.eventPortalTemplate.findUnique({
+      where: { id: templateId },
+      include: {
+        eventType: true,
+        fields: true,
+      },
+    })
+
+    if (!template || template.isArchived) {
+      return NextResponse.json({ error: 'Template not found' }, { status: 404 })
+    }
+
+    if (!Array.isArray(template.fields) || template.fields.length === 0) {
+      return NextResponse.json(
+        { error: 'Selected template does not have any form fields' },
+        { status: 400 }
+      )
+    }
+
+    const selectedEventType = await resolveEventType({
+      eventTypeId: body?.eventTypeId,
+      eventTypeName: body?.eventType,
+    })
+    const eventType = selectedEventType || template.eventType
+    if (!eventType || !eventType.isActive) {
+      return NextResponse.json(
+        { error: 'A valid active event type is required' },
+        { status: 400 }
+      )
+    }
+
+    const cookieToken = request.cookies.get('spotify_access_token')?.value
+    let accessToken: string
+    try {
+      accessToken = await getUserAccessToken(cookieToken)
+    } catch {
+      return NextResponse.json(
+        { error: 'Not authenticated with Spotify' },
+        { status: 401 }
+      )
+    }
+
+    let playlist
+    try {
+      const playlistName = `${eventName} - Client Requests`
+      const description = `Event portal requests for ${eventName} (${eventType.name} on ${eventDate}).`
+      playlist = await createSpotifyPlaylist(accessToken, playlistName, description, false)
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Failed to create Spotify playlist' },
+        { status: 502 }
+      )
+    }
+
+    const accessCode = await generateUniqueAccessCode()
+    const event = await prisma.eventPortalEvent.create({
+      data: {
+        templateId,
+        eventTypeId: eventType.id,
+        accessCode,
+        accessPinHash,
+        eventName,
+        eventDate,
+        eventStartTime,
+        eventEndTime,
+        venueName,
+        organizerName,
+        organizerEmail,
+        organizerPhone,
+        clientName,
+        clientEmail,
+        notes,
+        status: 'sent',
+        spotifyPlaylistId: playlist?.id ?? null,
+        spotifyPlaylistUrl: playlist?.external_urls?.spotify ?? null,
+      },
+      include: {
+        eventType: true,
+        template: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        submission: {
+          select: {
+            id: true,
+            submittedAt: true,
+          },
+        },
+      },
+    })
+
+    return NextResponse.json(
+      {
+        event: mapEventSummary(event),
+      },
+      { status: 201 }
+    )
+  } catch (error) {
+    console.error('Error creating event portal event:', error)
+    return NextResponse.json(
+      { error: 'Failed to create event portal event' },
+      { status: 500 }
+    )
+  }
+}
+

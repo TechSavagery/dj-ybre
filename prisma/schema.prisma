@@ -16,6 +16,20 @@ datasource db {
   directUrl = env("DATABASE_URL_UNPOOLED")
 }
 
+enum EventPortalFieldType {
+  short_text
+  long_text
+  number
+  date
+  time
+  select
+  multi_select
+  checkbox
+  spotify_tracks
+  email
+  phone
+}
+
 model PlaylistSession {
   id                String          @id @default(cuid())
   eventType         String          // wedding, birthday, corporate, etc.
@@ -234,4 +248,121 @@ model SongRequestVote {
   @@unique([requestId, sessionKey])
   @@index([requestId])
   @@map("song_request_votes")
+}
+
+// Event portal models (template builder + personalized client forms)
+model EventPortalEventType {
+  id        String               @id @default(cuid())
+  name      String               @unique
+  slug      String               @unique
+  isSystem  Boolean              @default(false)
+  isActive  Boolean              @default(true)
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+  templates EventPortalTemplate[]
+  events    EventPortalEvent[]
+
+  @@index([isActive])
+  @@index([createdAt])
+  @@map("event_portal_event_types")
+}
+
+model EventPortalTemplate {
+  id          String                   @id @default(cuid())
+  name        String
+  slug        String                   @unique
+  eventTypeId String
+  description String?
+  isDefault   Boolean                  @default(false)
+  isArchived  Boolean                  @default(false)
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
+  eventType   EventPortalEventType     @relation(fields: [eventTypeId], references: [id], onDelete: Restrict)
+  fields      EventPortalTemplateField[]
+  events      EventPortalEvent[]
+
+  @@index([eventTypeId])
+  @@index([createdAt])
+  @@map("event_portal_templates")
+}
+
+model EventPortalTemplateField {
+  id          String                      @id @default(cuid())
+  templateId  String
+  key         String
+  label       String
+  helperText  String?
+  placeholder String?
+  type        EventPortalFieldType
+  required    Boolean                     @default(false)
+  options     Json?
+  fieldOrder  Int
+  createdAt   DateTime                    @default(now())
+  updatedAt   DateTime                    @updatedAt
+  template    EventPortalTemplate         @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  answers     EventPortalSubmissionAnswer[]
+
+  @@unique([templateId, key])
+  @@index([templateId, fieldOrder])
+  @@map("event_portal_template_fields")
+}
+
+model EventPortalEvent {
+  id                String               @id @default(cuid())
+  templateId        String
+  eventTypeId       String
+  accessCode        String               @unique
+  accessPinHash     String?
+  eventName         String
+  eventDate         String
+  eventStartTime    String?
+  eventEndTime      String?
+  venueName         String?
+  organizerName     String?
+  organizerEmail    String?
+  organizerPhone    String?
+  clientName        String
+  clientEmail       String?
+  notes             String?
+  status            String               @default("draft")
+  spotifyPlaylistId String?
+  spotifyPlaylistUrl String?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  template          EventPortalTemplate  @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  eventType         EventPortalEventType @relation(fields: [eventTypeId], references: [id], onDelete: Restrict)
+  submission        EventPortalSubmission?
+
+  @@index([eventTypeId])
+  @@index([eventDate])
+  @@index([createdAt])
+  @@map("event_portal_events")
+}
+
+model EventPortalSubmission {
+  id          String                      @id @default(cuid())
+  eventId     String                      @unique
+  submittedAt DateTime                    @default(now())
+  updatedAt   DateTime                    @updatedAt
+  event       EventPortalEvent            @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  answers     EventPortalSubmissionAnswer[]
+
+  @@index([submittedAt])
+  @@map("event_portal_submissions")
+}
+
+model EventPortalSubmissionAnswer {
+  id           String                 @id @default(cuid())
+  submissionId String
+  fieldId      String
+  valueText    String?
+  valueJson    Json?
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  submission   EventPortalSubmission  @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  field        EventPortalTemplateField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  @@unique([submissionId, fieldId])
+  @@index([fieldId])
+  @@map("event_portal_submission_answers")
 }

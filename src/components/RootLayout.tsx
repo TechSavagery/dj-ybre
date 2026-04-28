@@ -20,6 +20,7 @@ import { GridPattern } from '@/components/GridPattern'
 import { Logo, Logomark } from '@/components/Logo'
 import { Offices } from '@/components/Offices'
 import { SocialMedia } from '@/components/SocialMedia'
+import { AdminShell } from '@/components/admin/AdminShell'
 
 const RootLayoutContext = createContext<{
   logoHovered: boolean
@@ -279,6 +280,10 @@ function RootLayoutInner({ children }: { children: React.ReactNode }) {
 export function RootLayout({ children }: { children: React.ReactNode }) {
   let pathname = usePathname()
   let [logoHovered, setLogoHovered] = useState(false)
+
+  if (pathname?.startsWith('/event-portal/manage')) {
+    return <AdminShell>{children}</AdminShell>
+  }
 
   return (
     <RootLayoutContext.Provider value={{ logoHovered, setLogoHovered }}>
