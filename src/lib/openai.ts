@@ -379,6 +379,8 @@ export interface TransitionIdea {
   notes: string
 }
 
+type TransitionIdeaDifficulty = TransitionIdea['difficulty']
+
 export async function cleanTransitionNotes(
   notes: string,
   context: TransitionNotesContext = {}
@@ -503,13 +505,15 @@ function normalizeTransitionIdeas(ideas: Partial<TransitionIdea>[] | undefined):
 
   return ideas
     .map((idea) => {
-      const transitionTypes = Array.isArray(idea.transitionTypes)
+      const transitionTypes: TransitionType[] = Array.isArray(idea.transitionTypes)
         ? idea.transitionTypes.filter((type): type is TransitionType =>
             TRANSITION_TYPES.includes(type as TransitionType)
           )
         : []
-      const difficulty = ['easy', 'medium', 'advanced'].includes(String(idea.difficulty))
-        ? idea.difficulty
+      const difficulty: TransitionIdeaDifficulty = ['easy', 'medium', 'advanced'].includes(
+        String(idea.difficulty)
+      )
+        ? (idea.difficulty as TransitionIdeaDifficulty)
         : 'medium'
 
       return {
@@ -518,7 +522,7 @@ function normalizeTransitionIdeas(ideas: Partial<TransitionIdea>[] | undefined):
         tracks: Array.isArray(idea.tracks)
           ? idea.tracks.filter((track): track is string => typeof track === 'string')
           : [],
-        transitionTypes: transitionTypes.length ? transitionTypes : ['other'],
+        transitionTypes: transitionTypes.length ? transitionTypes : ['other' as TransitionType],
         difficulty,
         whyItWorks: typeof idea.whyItWorks === 'string' ? idea.whyItWorks.trim() : '',
         steps: Array.isArray(idea.steps)
