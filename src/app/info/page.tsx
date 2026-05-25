@@ -28,14 +28,14 @@ const links = [
 
 export const metadata: Metadata = {
   title: 'Info',
-  description: 'Quick links for DJ YBRE.',
+  description: 'Stay connected with DJ YBRE.',
 }
 
 export default function InfoPage() {
   return (
     <>
-      <PageIntro eyebrow="Info" title="Quick links for DJ YBRE">
-        <p>Thanks for the energy. Tap a link to stay connected.</p>
+      <PageIntro eyebrow="Info" title="Stay connected">
+        <p>Thanks for the energy. Tap a button to stay connected.</p>
       </PageIntro>
 
       <Container className="mt-24 sm:mt-32 lg:mt-40">
@@ -44,7 +44,12 @@ export default function InfoPage() {
             <ListItem key={link.title} title={link.title}>
               <p>{link.description}</p>
               <div className="mt-4">
-                <Button href={link.href}>{link.cta}</Button>
+                <Button
+                  href={link.href}
+                  className="w-full justify-center px-6 py-3 text-base sm:w-auto sm:justify-start"
+                >
+                  {link.cta}
+                </Button>
               </div>
             </ListItem>
           ))}
